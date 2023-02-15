@@ -25,8 +25,9 @@
     },
     "content_scripts": [
       {
-        "matches": ["https://*.app.box.com/*"],
-        "js": ["src/content.js"]
+        "matches": ["https://*.box.com/*"],
+        "js": ["src/content.js"],
+        "all_frames": true
       }
     ],
     "icons": {

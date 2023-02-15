@@ -42,8 +42,13 @@ async function getCurrentTabInfo() {
   return [tabs[0].id, tabs[0].url];
 }
 
+function getURLTypeAndIdentifier(url) {
+  const [_, type, id] = url.match(/https:\/\/.*\.?app.box.com\/(.+)\/(\d+)/);
+  return [type, id];
+}
+
 function getApiEndpoint(taburl) {
-  const [, type, id] = taburl.match(/https:\/\/.*\.?app.box.com\/(.+)\/(\d+)/);
+  const [type, id] = getURLTypeAndIdentifier(taburl);
 
   if (type !== "file" && type !== "folder") {
     throw new Error("Invalid URL");
@@ -179,6 +184,28 @@ async function getFileDirInfo(url, accessToken) {
   return await res.json();
 }
 
+function getNotesParentFolderURL(tabid) {
+  return new Promise( (resolve) => {
+    chrome.tabs.sendMessage(tabid,
+      {method: "getNotesParentFolderURLInTab"},
+      (response) => {
+        // スクレイピングで得られるboxnoteのフォルダー名は
+        // トップフレームでフォルダーを開いた時と形式が異なるため変換する
+        resolve(response["body"].replace(/(https:\/\/.*\.?app.box.com\/)files\/0\/f/, "$1folder"));
+      });
+  });
+}
+
+function getNotesFileName(tabid) {
+  return new Promise( (resolve) => {
+    chrome.tabs.sendMessage(tabid,
+      {method: "getNotesFileNameInTab"},
+      (response) => {
+        resolve(response["body"]);
+      });
+  });
+}
+
 async function resolveVariable(name) {
   const [tabid, taburl] = await getCurrentTabInfo();
 
@@ -189,7 +216,18 @@ async function resolveVariable(name) {
     return urlobj.origin + urlobj.pathname;
   }
 
-  const info = await getInfoFromAccessToken(taburl);
+  const [type, id] = getURLTypeAndIdentifier(taburl);
+
+  let url;
+  if (type === "notes") {
+    // boxnoteはAPIが対応していないため、
+    // まずはスクレイピングで取得した上位フォルダのurlの情報を取得する
+    url = await getNotesParentFolderURL(tabid);
+  } else {
+    url = taburl;
+  }
+
+  const info = await getInfoFromAccessToken(url);
 
   let separator;
   let prefix;
@@ -216,6 +254,12 @@ async function resolveVariable(name) {
   // 「すべてのファイル」というダミーの名前が info.name に入っているので無視
   if (info.id !== "0") {
     path += separator + info.name;
+  }
+
+  // boxnoteの場合はAPIで取得したフォルダ情報に
+  // さらにスクレイピングで取得したファイル名と拡張子を結合
+  if (type === "notes") {
+    path += separator + await getNotesFileName(tabid) + ".boxnote";
   }
 
   return path;
@@ -279,7 +323,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     const res = await constructOutput(output, search, replace);
     const [tabid, _taburl] = await getCurrentTabInfo();
 
-    chrome.tabs.sendMessage(tabid, { message: res });
+    chrome.tabs.sendMessage(tabid, {method: "copyToClipboard", message : res});
 
     sendResponse({});
   })();

@@ -15,11 +15,31 @@ function copyText(text) {
   body.removeChild(copyFrom);
 }
 
+function getNotesParentFolderURLInTab() {
+  return document.querySelector(".infinite-list-item.selected")
+    .querySelector(".note-list-item-parent-folder-container > a")["href"];
+}
+
+function getNotesFileNameInTab() {
+  return document.querySelector(".documentTitle").textContent;
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  try {
-    copyText(request.message);
-  } catch (error) {
-    console.log(error);
+  if (request.method === "copyToClipboard") {
+    try {
+      copyText(request.message);
+    } catch (error) {
+      console.log(error);
+    }
+    sendResponse({});
+  } else if (request.method === "getNotesParentFolderURLInTab") {
+    if (window != parent) {
+      sendResponse({method: "getNotesParentFolderURLInTab", body: getNotesParentFolderURLInTab()});
+    }
+  } else if (request.method === "getNotesFileNameInTab") {
+    if (window != parent) {
+      sendResponse({method: "getNotesFileNameInTab", body: getNotesFileNameInTab()});
+    }
   }
   sendResponse({});
 });
