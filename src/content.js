@@ -24,6 +24,20 @@ function getNotesFileNameInTab() {
   return document.querySelector(".documentTitle").textContent;
 }
 
+function getInfoFromAccessToken(taburl) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage(
+      {
+        method: "getInfoFromAccessToken",
+        url: taburl,
+      },
+      (response) => {
+        resolve(response["body"]);
+      }
+    );
+  });
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.method === "copyToClipboard") {
     try {
@@ -43,3 +57,79 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   sendResponse({});
 });
+
+function formatDate(dateString) {
+  const date = new Date(dateString);
+
+  const year = date.getFullYear();
+  const month = ("00" + (date.getMonth() + 1)).slice(-2);
+  const day = ("00" + date.getDate()).slice(-2);
+
+  const dayOfWeek = ["日", "月", "火", "水", "木", "金", "土"][date.getDay()];
+
+  const hour = ("00" + date.getHours()).slice(-2);
+  const minute = ("00" + date.getMinutes()).slice(-2);
+  const second = ("00" + date.getSeconds()).slice(-2);
+
+  return `${year}/${month}/${day} (${dayOfWeek}) ${hour}:${minute}:${second}`;
+}
+
+async function rewriteColumns() {
+  const rows = document
+    .getElementsByClassName("files-list")[0]
+    .querySelectorAll(".table-row");
+  for (const row of rows) {
+    if (row.hasAttribute("data-resin-folder_id")) {
+      if (
+        row.querySelectorAll("span[data-testid='item-last-updated']")[0]
+          .textContent[0] !== "☆"
+      ) {
+        const folderId = row.getAttribute("data-resin-folder_id");
+        const taburl = `${location.origin}/folder/${folderId}`;
+        const folderInfo = await getInfoFromAccessToken(taburl);
+        row.querySelectorAll(
+          "span[data-testid='item-last-updated']"
+        )[0].textContent =
+          "☆" +
+          formatDate(folderInfo["content_modified_at"]) +
+          "、更新者: " +
+          folderInfo["modified_by"]["name"];
+      }
+    } else if (row.hasAttribute("data-resin-file_id")) {
+      if (
+        row.querySelectorAll("span[data-testid='item-last-updated']")[0]
+          .textContent[0] !== "☆"
+      ) {
+        const fileId = row.getAttribute("data-resin-file_id");
+        const taburl = `${location.origin}/file/${fileId}`;
+        const fileInfo = await getInfoFromAccessToken(taburl);
+        row.querySelectorAll(
+          "span[data-testid='item-last-updated']"
+        )[0].textContent =
+          "☆" +
+          formatDate(fileInfo["content_modified_at"]) +
+          "、更新者: " +
+          fileInfo["modified_by"]["name"];
+      }
+    }
+  }
+}
+
+function observe() {
+  const observer = new MutationObserver((mutations, observer) => {
+    rewriteColumns();
+  });
+
+  const config = {
+    attributes: true,
+    childList: true,
+    subtree: true,
+  };
+  observer.observe(document.body, config);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", observe);
+} else {
+  observe();
+}

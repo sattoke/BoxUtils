@@ -3,6 +3,7 @@
 function sendToBackground(event) {
   chrome.runtime.sendMessage(
     {
+      method: "sendCopyRequest",
       type: event.target.id,
     },
     () => {

@@ -310,22 +310,29 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   // returnがPromiseになってしまい、
   // return trueができず非同期処理を待たなくなることに注意
   (async () => {
-    if (message["type"].slice(0, 4) !== "copy") {
+    if (message["method"] === "sendCopyRequest") {
+      if (message["type"].slice(0, 4) !== "copy") {
+        sendResponse({});
+        return;
+      }
+
+      const index = message["type"].slice(4);
+      const options = await chrome.storage.sync.get();
+      const output = options["output" + index];
+      const search = options["search" + index];
+      const replace = options["replace" + index];
+      const res = await constructOutput(output, search, replace);
+      const [tabid, _taburl] = await getCurrentTabInfo();
+
+      chrome.tabs.sendMessage(tabid, {method: "copyToClipboard", message : res});
+
       sendResponse({});
-      return;
+    } else if (message["method"] === "getInfoFromAccessToken") {
+      const info = await getInfoFromAccessToken(message["url"]);
+      sendResponse({
+        body: info
+      });
     }
-
-    const index = message["type"].slice(4);
-    const options = await chrome.storage.sync.get();
-    const output = options["output" + index];
-    const search = options["search" + index];
-    const replace = options["replace" + index];
-    const res = await constructOutput(output, search, replace);
-    const [tabid, _taburl] = await getCurrentTabInfo();
-
-    chrome.tabs.sendMessage(tabid, {method: "copyToClipboard", message : res});
-
-    sendResponse({});
   })();
 
   return true;
