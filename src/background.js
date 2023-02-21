@@ -64,7 +64,9 @@ async function getInfoFromAccessToken(url) {
   try {
     return await getFileDirInfo(url, savedAccessToken);
   } catch (error) {
-    console.log("Since there was no valid access token, a refresh token is used to obtain an access token.");
+    console.log(
+      "Since there was no valid access token, a refresh token is used to obtain an access token."
+    );
     return await getInfoFromRefreshToken(url);
   }
 }
@@ -102,7 +104,9 @@ async function getInfoFromRefreshToken(url) {
   try {
     return await getFileDirInfo(url, accessToken);
   } catch (error) {
-    console.log("Since a valid access token could not be obtained even with a refresh token, the authorization code flow is processed.");
+    console.log(
+      "Since a valid access token could not be obtained even with a refresh token, the authorization code flow is processed."
+    );
     return await getInfoFromAuthorization(url);
   }
 }
@@ -164,7 +168,9 @@ async function getInfoFromAuthorization(url) {
   try {
     return await getFileDirInfo(url, accessToken);
   } catch (error) {
-    console.log("The process is terminated because a valid access token could not be obtained.");
+    console.log(
+      "The process is terminated because a valid access token could not be obtained."
+    );
     throw error;
   }
 }
@@ -185,24 +191,33 @@ async function getFileDirInfo(url, accessToken) {
 }
 
 function getNotesParentFolderURL(tabid) {
-  return new Promise( (resolve) => {
-    chrome.tabs.sendMessage(tabid,
-      {method: "getNotesParentFolderURLInTab"},
+  return new Promise((resolve) => {
+    chrome.tabs.sendMessage(
+      tabid,
+      { method: "getNotesParentFolderURLInTab" },
       (response) => {
         // スクレイピングで得られるboxnoteのフォルダー名は
         // トップフレームでフォルダーを開いた時と形式が異なるため変換する
-        resolve(response["body"].replace(/(https:\/\/.*\.?app.box.com\/)files\/0\/f/, "$1folder"));
-      });
+        resolve(
+          response["body"].replace(
+            /(https:\/\/.*\.?app.box.com\/)files\/0\/f/,
+            "$1folder"
+          )
+        );
+      }
+    );
   });
 }
 
 function getNotesFileName(tabid) {
-  return new Promise( (resolve) => {
-    chrome.tabs.sendMessage(tabid,
-      {method: "getNotesFileNameInTab"},
+  return new Promise((resolve) => {
+    chrome.tabs.sendMessage(
+      tabid,
+      { method: "getNotesFileNameInTab" },
       (response) => {
         resolve(response["body"]);
-      });
+      }
+    );
   });
 }
 
@@ -259,7 +274,7 @@ async function resolveVariable(name) {
   // boxnoteの場合はAPIで取得したフォルダ情報に
   // さらにスクレイピングで取得したファイル名と拡張子を結合
   if (type === "notes") {
-    path += separator + await getNotesFileName(tabid) + ".boxnote";
+    path += separator + (await getNotesFileName(tabid)) + ".boxnote";
   }
 
   return path;
@@ -324,13 +339,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       const res = await constructOutput(output, search, replace);
       const [tabid, _taburl] = await getCurrentTabInfo();
 
-      chrome.tabs.sendMessage(tabid, {method: "copyToClipboard", message : res});
+      chrome.tabs.sendMessage(tabid, {
+        method: "copyToClipboard",
+        message: res,
+      });
 
       sendResponse({});
     } else if (message["method"] === "getInfoFromAccessToken") {
       const info = await getInfoFromAccessToken(message["url"]);
       sendResponse({
-        body: info
+        body: info,
       });
     }
   })();

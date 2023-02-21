@@ -16,7 +16,8 @@ function copyText(text) {
 }
 
 function getNotesParentFolderURLInTab() {
-  return document.querySelector(".infinite-list-item.selected")
+  return document
+    .querySelector(".infinite-list-item.selected")
     .querySelector(".note-list-item-parent-folder-container > a")["href"];
 }
 
@@ -48,11 +49,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({});
   } else if (request.method === "getNotesParentFolderURLInTab") {
     if (window != parent) {
-      sendResponse({method: "getNotesParentFolderURLInTab", body: getNotesParentFolderURLInTab()});
+      sendResponse({
+        method: "getNotesParentFolderURLInTab",
+        body: getNotesParentFolderURLInTab(),
+      });
     }
   } else if (request.method === "getNotesFileNameInTab") {
     if (window != parent) {
-      sendResponse({method: "getNotesFileNameInTab", body: getNotesFileNameInTab()});
+      sendResponse({
+        method: "getNotesFileNameInTab",
+        body: getNotesFileNameInTab(),
+      });
     }
   }
   sendResponse({});
