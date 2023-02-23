@@ -62,7 +62,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
     }
   }
-  sendResponse({});
 });
 
 function formatDate(dateString) {
@@ -82,9 +81,22 @@ function formatDate(dateString) {
 }
 
 async function rewriteColumns() {
-  const rows = document
-    .getElementsByClassName("files-list")[0]
-    .querySelectorAll(".table-row");
+  if (!location.pathname.startsWith("/folder/")) {
+    return;
+  }
+
+  const filesList = document.getElementsByClassName("files-list")[0];
+
+  if (filesList === undefined) {
+    // ファイルのリストは遅延して作成されるため
+    // タイミングによっては存在しない場合がある。
+    // その場合は単純に無視する
+    console.log("files-list was not found");
+    return;
+  }
+
+  const rows = filesList.querySelectorAll(".table-row");
+
   for (const row of rows) {
     if (row.hasAttribute("data-resin-folder_id")) {
       if (
@@ -128,7 +140,6 @@ function observe() {
   });
 
   const config = {
-    attributes: true,
     childList: true,
     subtree: true,
   };
