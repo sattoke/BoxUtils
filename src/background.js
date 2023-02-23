@@ -64,6 +64,7 @@ async function getInfoFromAccessToken(url) {
   try {
     return await getFileDirInfo(url, savedAccessToken);
   } catch (error) {
+    console.log(error);
     console.log(
       "Since there was no valid access token, a refresh token is used to obtain an access token."
     );
@@ -104,6 +105,7 @@ async function getInfoFromRefreshToken(url) {
   try {
     return await getFileDirInfo(url, accessToken);
   } catch (error) {
+    console.log(error);
     console.log(
       "Since a valid access token could not be obtained even with a refresh token, the authorization code flow is processed."
     );
@@ -168,6 +170,7 @@ async function getInfoFromAuthorization(url) {
   try {
     return await getFileDirInfo(url, accessToken);
   } catch (error) {
+    console.log(error);
     console.log(
       "The process is terminated because a valid access token could not be obtained."
     );
@@ -184,6 +187,7 @@ async function getFileDirInfo(url, accessToken) {
   });
 
   if (!res.ok) {
+    console.log(res);
     throw new Error("Fetch error");
   }
 
