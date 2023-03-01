@@ -25,11 +25,11 @@ function getNotesFileNameInTab() {
   return document.querySelector(".documentTitle").textContent;
 }
 
-function getInfoFromAccessToken(taburl) {
+function getInfo(taburl) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage(
       {
-        method: "getInfoFromAccessToken",
+        method: "getInfo",
         url: taburl,
       },
       (response) => {
@@ -105,7 +105,7 @@ async function rewriteColumns() {
       ) {
         const folderId = row.getAttribute("data-resin-folder_id");
         const taburl = `${location.origin}/folder/${folderId}`;
-        const folderInfo = await getInfoFromAccessToken(taburl);
+        const folderInfo = await getInfo(taburl);
         row.querySelectorAll(
           "span[data-testid='item-last-updated']"
         )[0].textContent =
@@ -121,7 +121,7 @@ async function rewriteColumns() {
       ) {
         const fileId = row.getAttribute("data-resin-file_id");
         const taburl = `${location.origin}/file/${fileId}`;
-        const fileInfo = await getInfoFromAccessToken(taburl);
+        const fileInfo = await getInfo(taburl);
         row.querySelectorAll(
           "span[data-testid='item-last-updated']"
         )[0].textContent =

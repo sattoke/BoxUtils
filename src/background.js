@@ -57,60 +57,142 @@ function getApiEndpoint(taburl) {
   return `https://api.box.com/2.0/${type}s/${id}`;
 }
 
-async function getInfoFromAccessToken(url) {
-  const result = await chrome.storage.local.get(["access_token"]);
-  const savedAccessToken = result["access_token"];
-
+async function getInfo(url) {
+  let accessToken;
+  let info;
   try {
-    return await getFileDirInfo(url, savedAccessToken);
+    accessToken = await getAccessToken();
+    info = await getFileDirInfo(url, accessToken);
   } catch (error) {
     console.log(error);
     console.log(
-      "Since there was no valid access token, a refresh token is used to obtain an access token."
+      "Refresh the access token since the file information acquisition failed for some reason."
     );
-    return await getInfoFromRefreshToken(url);
+    accessToken = await getAccessToken(true);
+    info = await getFileDirInfo(url, accessToken);
   }
+
+  return info;
 }
 
-async function getInfoFromRefreshToken(url) {
-  const options = await chrome.storage.sync.get(["clientId", "clientSecret"]);
-  const clientId = options["clientId"];
-  const clientSecret = options["clientSecret"];
-  const result = await chrome.storage.local.get(["refresh_token"]);
-  const savedRefreshToken = result["refresh_token"];
+/**
+ * アクセストークンを取得する。
+ * @param {bool} doRefresh トークンのリフレッシュを行うかどうか。
+ *     一度当関数から返却されたアクセストークンを用いたAPI呼び出しが失敗した場合などに利用する。
+ *     このケースは当プログラム外でアクセストークンが無効化された場合などに発生する可能性がある。
+ *     [TODO] invalidateAccessToken()に処理を分離した方がいいか？
+ *            そのあとアクセストークンを取得することを考えるとやはりこの関数でやった方がいい？
+ * @return {string} アクセストークン
+ */
+async function getAccessToken(doRefresh = false) {
+  // アクセストークンの有効期限は
+  // https://ja.developer.box.com/guides/api-calls/permissions-and-errors/expiration/
+  // によると60分(3600秒)。
+  // なおトークンレスポンスの expires_in には基本的に4000秒以上のランダムな値となっていそうなので
+  // 時刻のずれなどによる猶予期間の考慮はクライアント側では不要そう。
+  const ACCESS_TOKEN_EXPIRATION_TIME = 60 * 60 * 1000  // アクセストークンの有効期間(ミリ秒)。
 
-  const params = new URLSearchParams();
-  params.append("grant_type", "refresh_token");
-  params.append("refresh_token", savedRefreshToken);
-  params.append("client_id", clientId);
-  params.append("client_secret", clientSecret);
+  if (!doRefresh) {
+    const result = await chrome.storage.local.get(["access_token", "refreshDateTime"]);
+    const accessToken = result["access_token"];
+    const refreshDateTime = result["refreshDateTime"] ?? 0;
 
-  const res = await fetch("https://api.box.com/oauth2/token", {
-    method: "post",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: params,
-  });
-
-  const json = await res.json();
-
-  const accessToken = json["access_token"];
-  const refreshToken = json["refresh_token"];
-  await chrome.storage.local.set({
-    access_token: accessToken,
-    refresh_token: refreshToken,
-  });
-
-  try {
-    return await getFileDirInfo(url, accessToken);
-  } catch (error) {
-    console.log(error);
-    console.log(
-      "Since a valid access token could not be obtained even with a refresh token, the authorization code flow is processed."
-    );
-    return await getInfoFromAuthorization(url);
+    if (accessToken) {
+      if( Date.now() - refreshDateTime < ACCESS_TOKEN_EXPIRATION_TIME) {
+        return accessToken;
+      }
+    }
   }
+
+  return refreshAccessToken();
+}
+
+/**
+ * アクセストークンのリフレッシュを行う。
+ * @return {string} アクセストークン
+ */
+async function refreshAccessToken() {
+  // 有効期限の切れたアクセストークンを利用して
+  // 複数のAPIアクセスが同時に行われた場合などは、
+  // そのAPIアクセス一つ一つ毎にリフレッシュの要求が発生して、
+  // リフレッシュトークンとアクセストークンが次々に無効化される可能性がある。
+  // それを回避するためにリフレッシュは排他処理を行い、
+  // 一度リフレッシュが成功したのちはしばらくリフレッシュを禁止することとする。
+  // つまりリフレッシュの要求があったとしても
+  // 実際には既に直前にリフレッシュが完了している状態のため、
+  // 余計なリフレッシュを行わないように
+  // リフレッシュ直後のアクセストークンを返却する。
+  // リフレッシュ禁止期間は同時に発生した
+  // 無効なアクセストークンを用いたAPIアクセス全てに対して
+  // ロックの確認とストレージに保存したアクセストークンを
+  // 返し終わるのに十分な期間以上あればよい。
+  // またアクセストークンの寿命(Boxの場合60分)より長すぎる期間とすると
+  // アクセストークンが無効になっているのに
+  // リフレッシュができなくなってしまう。
+  // またその他のなんらかの要因でアクセストークンが無効化された場合も考えると
+  // なるべく短い期間の方が望ましい。
+  // ここでは仮に10秒とする。
+  const minRefreshInterval = 10000;  // リフレッシュ処理後、次のリフレッシュ処理をするまでの最低待ち時間(ミリ秒)
+
+  // リフレッシュトークンの有効期限は
+  // https://ja.developer.box.com/guides/api-calls/permissions-and-errors/expiration/
+  // によると60日。
+  const REFRESH_TOKEN_EXPIRATION_TIME = 60 * 24 * 60 * 60 * 1000;  // リフレッシュトークンの有効期間(ミリ秒)。
+
+
+  let accessToken;
+  let refreshToken;
+  let tokenResponse;
+  let refreshDateTime;
+
+  await navigator.locks.request("refreshAccessToken", async (lock) => {
+    const options = await chrome.storage.sync.get(["clientId", "clientSecret"]);
+    const clientId = options["clientId"];
+    const clientSecret = options["clientSecret"];
+    const result = await chrome.storage.local.get(["access_token", "refresh_token", "refreshDateTime"]);
+    refreshToken = result["refresh_token"];
+    accessToken = result["access_token"];
+    refreshDateTime = result["refreshDateTime"] ?? 0;
+
+    // 直前にリフレッシュされていれば有効なアクセストークンとなっているはずなため
+    // ストレージに格納されているアクセストークンをそのまま返却する。
+    if (Date.now() - refreshDateTime < minRefreshInterval) {
+      return;
+    }
+
+    if (!refreshToken || (Date.now() - refreshDateTime > REFRESH_TOKEN_EXPIRATION_TIME)) {
+      tokenResponse = await getTokensFromAuthorization();
+    } else {
+      const params = new URLSearchParams();
+      params.append("grant_type", "refresh_token");
+      params.append("refresh_token", refreshToken);
+      params.append("client_id", clientId);
+      params.append("client_secret", clientSecret);
+
+      const res = await fetch("https://api.box.com/oauth2/token", {
+        method: "post",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: params,
+      });
+      tokenResponse = await res.json();
+    }
+
+    accessToken = tokenResponse["access_token"];
+    refreshToken = tokenResponse["refresh_token"];
+    refreshDateTime = Date.now();
+
+    await chrome.storage.local.set({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      refreshDateTime: refreshDateTime
+    });
+
+    return;
+  });
+
+  return accessToken;
 }
 
 function getRandomString() {
@@ -123,7 +205,7 @@ function getRandomString() {
     .replace(/=+$/, "");
 }
 
-async function getInfoFromAuthorization(url) {
+async function getTokensFromAuthorization() {
   const options = await chrome.storage.sync.get(["clientId", "clientSecret"]);
   const clientId = options["clientId"];
   const clientSecret = options["clientSecret"];
@@ -159,23 +241,7 @@ async function getInfoFromAuthorization(url) {
     body: params,
   });
 
-  const json = await res.json();
-  const accessToken = json["access_token"];
-  const refreshToken = json["refresh_token"];
-  await chrome.storage.local.set({
-    access_token: accessToken,
-    refresh_token: refreshToken,
-  });
-
-  try {
-    return await getFileDirInfo(url, accessToken);
-  } catch (error) {
-    console.log(error);
-    console.log(
-      "The process is terminated because a valid access token could not be obtained."
-    );
-    throw error;
-  }
+  return await res.json();
 }
 
 async function getFileDirInfo(url, accessToken) {
@@ -188,6 +254,7 @@ async function getFileDirInfo(url, accessToken) {
 
   if (!res.ok) {
     console.log(res);
+    console.log(...res.headers);
     throw new Error("Fetch error");
   }
 
@@ -246,7 +313,7 @@ async function resolveVariable(name) {
     url = taburl;
   }
 
-  const info = await getInfoFromAccessToken(url);
+  const info = await getInfo(url);
 
   let separator;
   let prefix;
@@ -349,8 +416,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       });
 
       sendResponse({});
-    } else if (message["method"] === "getInfoFromAccessToken") {
-      const info = await getInfoFromAccessToken(message["url"]);
+    } else if (message["method"] === "getInfo") {
+      const info = await getInfo(message["url"]);
       sendResponse({
         body: info,
       });
