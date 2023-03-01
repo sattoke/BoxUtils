@@ -93,6 +93,9 @@ async function getInfoFromRefreshToken(url) {
     body: params,
   });
 
+  console.log(res);
+  console.log(...res.headers);
+
   const json = await res.json();
 
   const accessToken = json["access_token"];
@@ -159,6 +162,9 @@ async function getInfoFromAuthorization(url) {
     body: params,
   });
 
+  console.log(res);
+  console.log(...res.headers);
+
   const json = await res.json();
   const accessToken = json["access_token"];
   const refreshToken = json["refresh_token"];
@@ -188,6 +194,7 @@ async function getFileDirInfo(url, accessToken) {
 
   if (!res.ok) {
     console.log(res);
+    console.log(...res.headers);
     throw new Error("Fetch error");
   }
 
