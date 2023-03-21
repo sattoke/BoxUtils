@@ -84,7 +84,6 @@ async function rewriteColumns() {
   if (!location.pathname.startsWith("/folder/")) {
     return;
   }
-
   const filesList = document.getElementsByClassName("files-list")[0];
 
   if (filesList === undefined) {
@@ -98,37 +97,46 @@ async function rewriteColumns() {
   const rows = filesList.querySelectorAll(".table-row");
 
   for (const row of rows) {
+    let type;
+
     if (row.hasAttribute("data-resin-folder_id")) {
-      if (
-        row.querySelectorAll("span[data-testid='item-last-updated']")[0]
-          .textContent[0] !== "☆"
-      ) {
-        const folderId = row.getAttribute("data-resin-folder_id");
-        const taburl = `${location.origin}/folder/${folderId}`;
-        const folderInfo = await getInfo(taburl);
-        row.querySelectorAll(
-          "span[data-testid='item-last-updated']"
-        )[0].textContent =
-          "☆" +
-          formatDate(folderInfo["content_modified_at"]) +
-          "、更新者: " +
-          folderInfo["modified_by"]["name"];
-      }
+      type = "folder";
     } else if (row.hasAttribute("data-resin-file_id")) {
-      if (
-        row.querySelectorAll("span[data-testid='item-last-updated']")[0]
-          .textContent[0] !== "☆"
-      ) {
-        const fileId = row.getAttribute("data-resin-file_id");
-        const taburl = `${location.origin}/file/${fileId}`;
-        const fileInfo = await getInfo(taburl);
-        row.querySelectorAll(
-          "span[data-testid='item-last-updated']"
-        )[0].textContent =
-          "☆" +
-          formatDate(fileInfo["content_modified_at"]) +
-          "、更新者: " +
-          fileInfo["modified_by"]["name"];
+      type = "file";
+    } else {
+      // 多分存在しないはず
+      continue;
+    }
+
+    if (
+      row.querySelectorAll("span[data-testid='item-last-updated']")[0]
+      .textContent[0] !== "☆"
+    ) {
+      const idInType = row.getAttribute(`data-resin-${type}_id`);
+      const taburl = `${location.origin}/${type}/${idInType}`;
+      const info = await getInfo(taburl);
+      const modifiedTime = new Date(info["content_modified_at"]);
+
+      const modifiedTimeElem = row.querySelectorAll(
+        "span[data-testid='item-last-updated']"
+      )[0];
+
+      modifiedTimeElem.textContent =
+        "☆" +
+        formatDate(modifiedTime) +
+        "、更新者: " +
+        info["modified_by"]["name"];
+
+      const time1HourAgo = new Date();
+      time1HourAgo.setHours(time1HourAgo.getHours() - 1);
+
+      const time24HoursAgo = new Date();
+      time24HoursAgo.setHours(time24HoursAgo.getHours() - 24);
+
+      if (modifiedTime > time1HourAgo) {
+        modifiedTimeElem.style.color = "red";
+      } else if (modifiedTime > time24HoursAgo) {
+        modifiedTimeElem.style.color = "orange";
       }
     }
   }
