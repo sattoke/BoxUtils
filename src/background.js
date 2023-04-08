@@ -416,6 +416,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       });
 
       sendResponse({});
+    } else if (message["method"] === "openFolder" || message["method"] === "openFile") {
+      const path = await constructOutput("${boxdrive_win}");
+
+      try {
+        const response = await chrome.runtime.sendNativeMessage("jp.toke.boxutils_helper", {method: message["method"], path: path});
+        console.log("Response", response);
+      } catch (err) {
+        console.log("Error", err);
+      }
+
+      sendResponse({});
     } else if (message["method"] === "getInfo") {
       const info = await getInfo(message["url"]);
       sendResponse({

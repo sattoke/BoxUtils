@@ -1,10 +1,20 @@
 "use strict";
 
 function sendToBackground(event) {
+  let method;
+
+  if (event.currentTarget.id === "open_folder") {
+    method = "openFolder";
+  } else if (event.currentTarget.id === "open_file") {
+    method = "openFile";
+  } else if (event.currentTarget.id.match(/^copy\d+$/)) {
+    method = "sendCopyRequest";
+  }
+
   chrome.runtime.sendMessage(
     {
-      method: "sendCopyRequest",
-      type: event.target.id,
+      method: method,
+      type: event.currentTarget.id,
     },
     () => {
       window.close();
@@ -23,6 +33,8 @@ async function setButtonName() {
 
 document.addEventListener("DOMContentLoaded", setButtonName);
 
+document.getElementById("open_folder").addEventListener("click", sendToBackground, true);
+document.getElementById("open_file").addEventListener("click", sendToBackground, true);
 document.getElementById("copy1").addEventListener("click", sendToBackground);
 document.getElementById("copy2").addEventListener("click", sendToBackground);
 document.getElementById("copy3").addEventListener("click", sendToBackground);

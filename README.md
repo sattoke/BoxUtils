@@ -1,6 +1,10 @@
 # BoxUtils
 BoxUtils は [Box](https://www.box.com/) のためのユーティリティソフトウェアとなるChrome拡張機能である。
-現在は主にWebブラウザ上で見ているBox上のファイルをBox Driveで開くためのパスを容易に得るための機能が中心である。
+現在は主に下記の機能がある。
+
+- Webブラウザ上で見ているファイルやフォルダについて、Box Driveで開くためのパスを取得や変換、クリップボードへコピーする機能
+- Webブラウザ上で見ているファイルやフォルダについて、ローカルのWindows上で直接開く機能 (別途 [BoxUtilsHelper](https://github.com/sattoke/BoxUtilsHelper) のインストールが必要)
+- Webブラウザ上で見ているファイルやフォルダについて、更新日時を常に秒単位まで表示し、更新日時からの経過時間に応じて色付けをする機能
 
 # 拡張機能のインストール方法
 現在はChromeウェブストアに登録していないため、下記手順でソースコードをダウンロードしてローカルからインストールする必要がある。
@@ -30,8 +34,16 @@ BoxUtils は [Box](https://www.box.com/) のためのユーティリティソフ
 
 # 使用方法
 
-[Box](https://www.box.com/) へアクセスし通常通りファイルやフォルダを表示し、Box Drive用のパスなどをコピーしたいときは、Chromeのアドレスバーの右の拡張機能のアイコン一覧にあるBoxUtilsのアイコン(青いフォルダマーク)をクリックし、5つ並んだボタンから所望のコピー方式をクリックするとクリップボードにパス等がコピーされる。
+[Box](https://www.box.com/) へアクセスし通常通りファイルやフォルダを表示し、Box Drive用のパスなどをコピーしたいときは、Chromeのアドレスバーの右の拡張機能のアイコン一覧にあるBoxUtilsのアイコン(青いフォルダマーク)をクリックして開くポップアップメニューで、5つ並んだボタンから所望のコピー方式をクリックするとクリップボードにパス等がコピーされる。
+同ポップアップメニューからフォルダやファイルのアイコンをクリックすると、直接ローカルのOS上のエクスプローラーでフォルダを開いたり、関連付けれらたアプリケーションでファイルを開く。
 
 初回実行時やトークンの有効期限が切れた場合などは、Boxの認証画面と認可画面が表示されることがあるので適宜IDパスワードの入力を行うこと。一度認可した後は最大60日間(リフレッシュトークンの有効期限)、認証や認可は不要となる (cf. [トークン - Box開発者向けドキュメントポータル](https://ja.developer.box.com/guides/authentication/tokens/) )。
 
 5つのボタンで各々何がコピーされるかはBoxUtilのオプション画面でカスタマイズが可能である。詳細はオプション画面を参照。
+
+# リソース
+- アイコンは下記の [icon rainbow](https://icon-rainbow.com/) や [Google Fonts](https://fonts.google.com/) の素材を使用させてもらった。
+  - [シンプルなフォルダのアイコン素材 4](https://icon-rainbow.com/%e3%82%b7%e3%83%b3%e3%83%97%e3%83%ab%e3%81%aa%e3%83%95%e3%82%a9%e3%83%ab%e3%83%80%e3%81%ae%e3%82%a2%e3%82%a4%e3%82%b3%e3%83%b3%e7%b4%a0%e6%9d%90-4/)
+  - [Folder Open](https://fonts.google.com/icons?icon.query=folder+open&icon.style=Rounded)
+  - [File Open](https://fonts.google.com/icons?icon.query=file+open&icon.style=Rounded)
+  - [Content Copy](https://fonts.google.com/icons?icon.query=content+copy&icon.style=Rounded)

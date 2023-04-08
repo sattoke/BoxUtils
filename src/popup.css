@@ -5,6 +5,25 @@ body {
   background-color: #000;
 }
 
+.button-group {
+  display: flex;
+  margin: 5px;
+}
+
+.open_type {
+  display: block;
+  color: #fff;
+  background-color: #333;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+  width: 50%;
+}
+
+.open_type:hover {
+  background-color: #777;
+}
+
 .copy_type {
   display: block;
   color: #fff;
