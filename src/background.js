@@ -32,6 +32,10 @@ chrome.runtime.onInstalled.addListener(async () => {
   options["replace5"] = "";
 
   await chrome.storage.sync.set(options);
+
+  chrome.tabs.create({
+    url: "chrome-extension://" + chrome.runtime.id + "/README.html"
+  });
 });
 
 async function getCurrentTabInfo() {

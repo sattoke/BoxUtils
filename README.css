@@ -1,0 +1,24 @@
+body {
+  padding: 0;
+  margin: 0 5%;
+  color: #fff;
+  background-color: #333;
+}
+
+a:visited {
+    color: #7fab87;
+}
+a:link {
+    color: #4981b1;
+}
+
+code {
+  white-space: nowrap;
+  border: 1px solid #999;
+  background-color: #666;
+  border-radius: 3px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  margin: 0 2px;
+  padding: 0 5px;
+}
