@@ -85,6 +85,60 @@ async function restoreOptions() {
   document.getElementById("replace5").value = options.replace5;
 }
 
+/**
+ * オプションの設定をエクスポートする。
+ * 現在の`chrome.storage`の内容をJSONファイルとしてエクスポートする。
+ * @returns {Promise<void>} エクスポートが完了するまでのPromiseオブジェクト。
+ */
+async function exportOptions() {
+  const items = await new Promise((resolve) => {
+    chrome.storage.sync.get(null, resolve);
+  });
+
+  const jsonData = JSON.stringify(items);
+  const blob = new Blob([jsonData], { type: "application/json" });
+
+  const url = URL.createObjectURL(blob);
+  const downloadLink = document.createElement("a");
+  downloadLink.href = url;
+  downloadLink.download = "BoxUtilsStorageData.json";
+
+  downloadLink.click();
+}
+
+/**
+ * オプションの設定をインポートする。
+ * JSONファイルを読み込み、その内容を`chrome.storage`にインポートする。
+ * インポート後には画面を再読み込みする。
+ * @returns {Promise<void>} インポートが完了し、画面を再読み込みするまでのPromiseオブジェクト。
+ */
+async function importOptions() {
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+
+  await new Promise((resolve) => {
+    fileInput.addEventListener("change", resolve);
+    fileInput.click();
+  });
+
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+
+  await new Promise((resolve) => {
+    reader.onload = resolve;
+    reader.readAsText(file);
+  });
+
+  const jsonData = reader.result;
+  const data = JSON.parse(jsonData);
+
+  await new Promise((resolve) => {
+      chrome.storage.sync.set(data, resolve);
+  });
+
+  location.reload();
+}
+
 async function clearToken(event) {
   const result = await chrome.storage.local.get([
     "access_token",
@@ -106,3 +160,10 @@ document
 document
   .getElementById("clearRefreshToken")
   .addEventListener("click", clearToken);
+
+document
+  .getElementById("export")
+  .addEventListener("click", exportOptions);
+document
+  .getElementById("import")
+  .addEventListener("click", importOptions);
