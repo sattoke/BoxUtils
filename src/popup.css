@@ -36,3 +36,13 @@ body {
 .copy_type:hover {
   background-color: #777;
 }
+
+.message {
+  display: none;
+  color: #e05c5c;
+  margin: 5px;
+}
+
+a {
+    color: #4981b1;
+}

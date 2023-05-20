@@ -153,6 +153,9 @@ async function refreshAccessToken() {
     const options = await chrome.storage.sync.get(["clientId", "clientSecret"]);
     const clientId = options["clientId"];
     const clientSecret = options["clientSecret"];
+    if (!clientId || !clientSecret) {
+      throw new Error("clientId or clientSecret is missing. Set the Client ID and Client Secret in the options of this extension.");
+    }
     const result = await chrome.storage.local.get(["access_token", "refresh_token", "refreshDateTime"]);
     refreshToken = result["refresh_token"];
     accessToken = result["access_token"];
@@ -165,7 +168,7 @@ async function refreshAccessToken() {
     }
 
     if (!refreshToken || (Date.now() - refreshDateTime > REFRESH_TOKEN_EXPIRATION_TIME)) {
-      tokenResponse = await getTokensFromAuthorization();
+      tokenResponse = await getTokensFromAuthorization(clientId, clientSecret);
     } else {
       const params = new URLSearchParams();
       params.append("grant_type", "refresh_token");
@@ -209,10 +212,7 @@ function getRandomString() {
     .replace(/=+$/, "");
 }
 
-async function getTokensFromAuthorization() {
-  const options = await chrome.storage.sync.get(["clientId", "clientSecret"]);
-  const clientId = options["clientId"];
-  const clientSecret = options["clientSecret"];
+async function getTokensFromAuthorization(clientId, clientSecret) {
   const redirectUrl = chrome.identity.getRedirectURL();
   const state = getRandomString();
 

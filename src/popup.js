@@ -22,8 +22,27 @@ function sendToBackground(event) {
   );
 }
 
-async function setButtonName() {
+async function setText() {
   const options = await chrome.storage.sync.get();
+
+  const messageElement = document.getElementById("message");
+  if (!options.clientId || !options.clientSecret) {
+    messageElement.innerHTML = "clientId or clientSecret is missing. Set the Client ID and Client Secret in the options of this extension.";
+
+    const optionLink = document.createElement("a");
+    optionLink.href = chrome.runtime.getURL("src/options.html");
+    optionLink.textContent = "[Extention Options]";
+    optionLink.target = "_blank";
+
+    messageElement.appendChild(document.createElement("br"));
+    messageElement.appendChild(optionLink);
+
+    messageElement.style.display = "block";
+  } else {
+    messageElement.innerHTML = "";
+    messageElement.style.display = "none";
+  }
+
   document.getElementById("copy1").textContent = options.name1 ?? "";
   document.getElementById("copy2").textContent = options.name2 ?? "";
   document.getElementById("copy3").textContent = options.name3 ?? "";
@@ -31,7 +50,7 @@ async function setButtonName() {
   document.getElementById("copy5").textContent = options.name5 ?? "";
 }
 
-document.addEventListener("DOMContentLoaded", setButtonName);
+document.addEventListener("DOMContentLoaded", setText);
 
 document.getElementById("open_folder").addEventListener("click", sendToBackground, true);
 document.getElementById("open_file").addEventListener("click", sendToBackground, true);
