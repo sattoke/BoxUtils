@@ -1,9 +1,13 @@
 body {
-  padding: 0;
+  padding: 0.5em;
   margin: 0;
   max-width: 800px;
   color: #fff;
   background-color: #333;
+}
+
+a {
+  color: #4981b1;
 }
 
 label {
@@ -13,7 +17,7 @@ label {
 }
 
 code {
-  padding: 0.2em 0.2em;
+  padding: 0.2em;
   background-color: #777;
 }
 
@@ -38,6 +42,49 @@ code {
 
 .save {
   width: 100%;
-  margin: 2em;
+  margin: 0.5em;
   font-size: 2em;
+}
+
+.tab-group {
+  display: flex;
+  justify-content: center;
+  margin: 0 0.5em;
+  padding-inline-start: 0;
+}
+
+.tab {
+  flex-grow: 1;
+  padding: 5px;
+  list-style: none;
+  border: solid 1px #fff;
+  text-align: center;
+  cursor: pointer;
+}
+
+.panel-group {
+  border: solid 1px #fff;
+  border-top: none;
+  margin: 0 0.5em;
+}
+
+.panel {
+  display: none;
+}
+
+.tab.active {
+  border-bottom-style: none;
+}
+
+.panel.show {
+  display: block;
+}
+
+.panel-h2 {
+  margin: 0 0.5em;
+  padding-top: 10px;
+}
+
+.description {
+  margin: 1em 10em;
 }

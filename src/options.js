@@ -152,7 +152,26 @@ async function clearToken(event) {
   }
 }
 
+/**
+ * タブクリック時のコンテンツ切り替えに関するイベントを設定する。
+ */
+function addTabEvent() {
+  const tabs = document.getElementsByClassName("tab");
+  for (const tab of tabs) {
+    tab.addEventListener("click", tabSwitch, false);
+  }
+
+  function tabSwitch(event) {
+    document.getElementsByClassName("active")[0].classList.remove("active");
+    event.target.classList.add("active");
+    document.getElementsByClassName("show")[0].classList.remove("show");
+    const index = Array.from(tabs).indexOf(event.target);
+    document.getElementsByClassName("panel")[index].classList.add("show");
+  };
+}
+
 document.addEventListener("DOMContentLoaded", restoreOptions);
+document.addEventListener("DOMContentLoaded", addTabEvent, false);
 document.getElementById("save").addEventListener("click", saveOptions);
 document
   .getElementById("clearAccessToken")
