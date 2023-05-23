@@ -110,7 +110,7 @@ async function rewriteColumns() {
 
     if (
       row.querySelectorAll("span[data-testid='item-last-updated']")[0]
-      .textContent[0] !== "☆"
+        .textContent[0] !== "☆"
     ) {
       const idInType = row.getAttribute(`data-resin-${type}_id`);
       const taburl = `${location.origin}/${type}/${idInType}`;

@@ -11,6 +11,7 @@
       <ul class="tab-group">
         <li class="tab active">Box</li>
         <li class="tab">Path Copy</li>
+        <li class="tab">Path Conversion</li>
         <li class="tab">Import/Export</li>
         <li class="tab">Debug</li>
       </ul>
@@ -32,6 +33,9 @@
         </div>
 
         <div class="panel">
+          <div class="panel-description">
+            These options are for "Copy this location to the clipboard" feature.
+          </div>
           <h2 class="panel-h2">Copy setting 1</h2>
           <div>
             <label>Name</label>
@@ -127,8 +131,8 @@
 
           <h3>Built-in variables</h3>
           The following built-in variables are available for Output setting. If
-          <code>$${FOO}</code> is written, the built-in variables are not expanded,
-          but are expanded to the string <code>${FOO}</code>.
+          <code>$${FOO}</code> is written, the built-in variables are not
+          expanded, but are expanded to the string <code>${FOO}</code>.
 
           <dl>
             <dt><code>${url}</code></dt>
@@ -136,13 +140,14 @@
 
             <dt><code>${url_simple}</code></dt>
             <dd>
-              Current URL containing only origin and pathname (i.e. URL without search
-              and hash)
+              Current URL containing only origin and pathname (i.e. URL without
+              search and hash)
             </dd>
 
             <dt><code>${boxdrive_mac}</code></dt>
             <dd>
-              File path used by Box Drive for macOS with File Provider Extension mode.
+              File path used by Box Drive for macOS with File Provider Extension
+              mode.
               <code>/</code> is used as a path separator.
               <code>~/Library/CloudStorage/Box-Box</code> is used as the mount
               directory.
@@ -151,22 +156,22 @@
             <dt><code>${boxdrive_mac_old}</code></dt>
             <dd>
               File path used by Box Drive for macOS with kernel-based mode.
-              <code>/</code> is used as a path separator. <code>~/Box</code> is used
-              as the mount directory.
+              <code>/</code> is used as a path separator. <code>~/Box</code> is
+              used as the mount directory.
             </dd>
 
             <dt><code>${boxdrive_win}</code></dt>
             <dd>
-              File path used by Box Drive for Windows. <code>\</code> is used as a
-              path separator. <code>%USERPROFILE%\Box</code> is used as the mount
-              directory.
+              File path used by Box Drive for Windows. <code>\</code> is used as
+              a path separator. <code>%USERPROFILE%\Box</code> is used as the
+              mount directory.
             </dd>
           </dl>
 
           <h3>Escape sequences</h3>
-          The following escape sequences are available in the Output setting. If the
-          string <code>\\</code> is used, the escape sequence is not expanded and the
-          string is replaced by the string <code>\</code>.
+          The following escape sequences are available in the Output setting. If
+          the string <code>\\</code> is used, the escape sequence is not
+          expanded and the string is replaced by the string <code>\</code>.
 
           <dl>
             <dt><code>\n</code></dt>
@@ -179,6 +184,22 @@
             <dd>Replaced by <code>\</code>.</dd>
           </dl>
         </div>
+
+        <div class="panel">
+          <div class="panel-description">
+            These options are for "Open path contained in the clipboard on Box Drive" feature.
+          </div>
+          <h2 class="panel-h2">Path Conversion Rules</h2>
+          <div id="search-replace-container">
+            <!--
+            <div>
+              <input type="text" placeholder="search" class="path-conversion-search"><input type="text" placeholder="replace" class="path-conversion-replace"><button>remove</button>
+            </div>
+            -->
+            <div id="addInputPair" class="button">Add</div>
+          </div>
+        </div>
+
         <div class="panel">
           <div class="container">
             <div id="export" class="button">Export Options</div>

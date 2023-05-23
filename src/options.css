@@ -85,6 +85,28 @@ code {
   padding-top: 10px;
 }
 
+.panel-description {
+  margin: 0 0.5em;
+  padding-top: 10px;
+}
+
 .description {
   margin: 1em 10em;
+}
+
+.path-conversion-search {
+  width: 40%;
+}
+
+.path-conversion-replace {
+  width: 40%;
+}
+
+.path-conversion-remove {
+  width: 10%;
+}
+
+#search-replace-container {
+  display: block;
+  margin: 10px 40px 10px 40px;
 }

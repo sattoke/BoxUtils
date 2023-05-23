@@ -23,6 +23,27 @@ async function saveOptions() {
   const output5 = document.getElementById("output5").value;
   const search5 = document.getElementById("search5").value;
   const replace5 = document.getElementById("replace5").value;
+
+  const searchInputs = document.getElementsByClassName(
+    "path-conversion-search"
+  );
+  const replaceInputs = document.getElementsByClassName(
+    "path-conversion-replace"
+  );
+  const pathConversionRules = [];
+
+  for (let i = 0; i < searchInputs.length; i++) {
+    const searchInput = searchInputs[i].value;
+    const replaceInput = replaceInputs[i].value;
+
+    if (searchInput && replaceInput) {
+      pathConversionRules.push({
+        search: searchInput,
+        replace: replaceInput,
+      });
+    }
+  }
+
   await chrome.storage.sync.set(
     {
       initialized: true,
@@ -48,6 +69,7 @@ async function saveOptions() {
       output5: output5,
       search5: search5,
       replace5: replace5,
+      pathConversionRules: pathConversionRules,
     },
     () => {
       const status = document.getElementById("status");
@@ -83,6 +105,98 @@ async function restoreOptions() {
   document.getElementById("output5").value = options.output5;
   document.getElementById("search5").value = options.search5;
   document.getElementById("replace5").value = options.replace5;
+
+  const container = document.getElementById("search-replace-container");
+  const addButton = document.getElementById("addInputPair");
+  const pathConversionRules = options.pathConversionRules;
+
+  //if (pathConversionRules && pathConversionRules.length > 0) {
+  if (!pathConversionRules || pathConversionRules.length == 0) {
+    const searchInput = document.createElement("input");
+    searchInput.type = "text";
+    searchInput.className = "path-conversion-search";
+    searchInput.placeholder = "search string";
+
+    const replaceInput = document.createElement("input");
+    replaceInput.type = "text";
+    replaceInput.className = "path-conversion-replace";
+    replaceInput.placeholder = "replace string";
+
+    const div = document.createElement("div");
+
+    const removeButton = document.createElement("button");
+    removeButton.innerHTML = "remove";
+    removeButton.className = "path-conversion-remove";
+    removeButton.onclick = () => {
+      container.removeChild(div);
+    };
+
+    div.appendChild(searchInput);
+    div.appendChild(replaceInput);
+    div.appendChild(removeButton);
+
+    addButton.before(div);
+  } else {
+    for (let i = 0; i < pathConversionRules.length; i++) {
+      const searchInput = document.createElement("input");
+      searchInput.type = "text";
+      searchInput.className = "path-conversion-search";
+      searchInput.value = pathConversionRules[i].search;
+
+      const replaceInput = document.createElement("input");
+      replaceInput.type = "text";
+      replaceInput.className = "path-conversion-replace";
+      replaceInput.value = pathConversionRules[i].replace;
+
+      const div = document.createElement("div");
+
+      const removeButton = document.createElement("button");
+      removeButton.innerHTML = "remove";
+      removeButton.className = "path-conversion-remove";
+      removeButton.onclick = () => {
+        container.removeChild(div);
+      };
+
+      div.appendChild(searchInput);
+      div.appendChild(replaceInput);
+      div.appendChild(removeButton);
+
+      addButton.before(div);
+    }
+  }
+}
+
+/**
+ * Path Conversion用の入力欄を追加する。
+ */
+function addInputPair() {
+  const container = document.getElementById("search-replace-container");
+  const addButton = document.getElementById("addInputPair");
+  const div = document.createElement("div");
+
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.className = "path-conversion-search";
+  searchInput.placeholder = "search string";
+
+  const replaceInput = document.createElement("input");
+  replaceInput.type = "text";
+  replaceInput.className = "path-conversion-replace";
+  replaceInput.placeholder = "replace string";
+
+  const removeButton = document.createElement("button");
+  removeButton.innerHTML = "remove";
+  removeButton.className = "path-conversion-remove";
+  removeButton.onclick = () => {
+    container.removeChild(div);
+  };
+
+  div.appendChild(searchInput);
+  div.appendChild(replaceInput);
+  div.appendChild(removeButton);
+
+  addButton.before(div);
+  //container.appendChild(div);
 }
 
 /**
@@ -133,7 +247,7 @@ async function importOptions() {
   const data = JSON.parse(jsonData);
 
   await new Promise((resolve) => {
-      chrome.storage.sync.set(data, resolve);
+    chrome.storage.sync.set(data, resolve);
   });
 
   location.reload();
@@ -167,7 +281,7 @@ function addTabEvent() {
     document.getElementsByClassName("show")[0].classList.remove("show");
     const index = Array.from(tabs).indexOf(event.target);
     document.getElementsByClassName("panel")[index].classList.add("show");
-  };
+  }
 }
 
 document.addEventListener("DOMContentLoaded", restoreOptions);
@@ -180,9 +294,6 @@ document
   .getElementById("clearRefreshToken")
   .addEventListener("click", clearToken);
 
-document
-  .getElementById("export")
-  .addEventListener("click", exportOptions);
-document
-  .getElementById("import")
-  .addEventListener("click", importOptions);
+document.getElementById("addInputPair").addEventListener("click", addInputPair);
+document.getElementById("export").addEventListener("click", exportOptions);
+document.getElementById("import").addEventListener("click", importOptions);

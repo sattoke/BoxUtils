@@ -34,7 +34,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   await chrome.storage.sync.set(options);
 
   chrome.tabs.create({
-    url: "chrome-extension://" + chrome.runtime.id + "/README.html"
+    url: "chrome-extension://" + chrome.runtime.id + "/README.html",
   });
 });
 
@@ -94,15 +94,18 @@ async function getAccessToken(doRefresh = false) {
   // によると60分(3600秒)。
   // なおトークンレスポンスの expires_in には基本的に4000秒以上のランダムな値となっていそうなので
   // 時刻のずれなどによる猶予期間の考慮はクライアント側では不要そう。
-  const ACCESS_TOKEN_EXPIRATION_TIME = 60 * 60 * 1000  // アクセストークンの有効期間(ミリ秒)。
+  const ACCESS_TOKEN_EXPIRATION_TIME = 60 * 60 * 1000; // アクセストークンの有効期間(ミリ秒)。
 
   if (!doRefresh) {
-    const result = await chrome.storage.local.get(["access_token", "refreshDateTime"]);
+    const result = await chrome.storage.local.get([
+      "access_token",
+      "refreshDateTime",
+    ]);
     const accessToken = result["access_token"];
     const refreshDateTime = result["refreshDateTime"] ?? 0;
 
     if (accessToken) {
-      if( Date.now() - refreshDateTime < ACCESS_TOKEN_EXPIRATION_TIME) {
+      if (Date.now() - refreshDateTime < ACCESS_TOKEN_EXPIRATION_TIME) {
         return accessToken;
       }
     }
@@ -136,13 +139,12 @@ async function refreshAccessToken() {
   // またその他のなんらかの要因でアクセストークンが無効化された場合も考えると
   // なるべく短い期間の方が望ましい。
   // ここでは仮に10秒とする。
-  const minRefreshInterval = 10000;  // リフレッシュ処理後、次のリフレッシュ処理をするまでの最低待ち時間(ミリ秒)
+  const minRefreshInterval = 10000; // リフレッシュ処理後、次のリフレッシュ処理をするまでの最低待ち時間(ミリ秒)
 
   // リフレッシュトークンの有効期限は
   // https://ja.developer.box.com/guides/api-calls/permissions-and-errors/expiration/
   // によると60日。
-  const REFRESH_TOKEN_EXPIRATION_TIME = 60 * 24 * 60 * 60 * 1000;  // リフレッシュトークンの有効期間(ミリ秒)。
-
+  const REFRESH_TOKEN_EXPIRATION_TIME = 60 * 24 * 60 * 60 * 1000; // リフレッシュトークンの有効期間(ミリ秒)。
 
   let accessToken;
   let refreshToken;
@@ -154,9 +156,15 @@ async function refreshAccessToken() {
     const clientId = options["clientId"];
     const clientSecret = options["clientSecret"];
     if (!clientId || !clientSecret) {
-      throw new Error("clientId or clientSecret is missing. Set the Client ID and Client Secret in the options of this extension.");
+      throw new Error(
+        "clientId or clientSecret is missing. Set the Client ID and Client Secret in the options of this extension."
+      );
     }
-    const result = await chrome.storage.local.get(["access_token", "refresh_token", "refreshDateTime"]);
+    const result = await chrome.storage.local.get([
+      "access_token",
+      "refresh_token",
+      "refreshDateTime",
+    ]);
     refreshToken = result["refresh_token"];
     accessToken = result["access_token"];
     refreshDateTime = result["refreshDateTime"] ?? 0;
@@ -167,7 +175,10 @@ async function refreshAccessToken() {
       return;
     }
 
-    if (!refreshToken || (Date.now() - refreshDateTime > REFRESH_TOKEN_EXPIRATION_TIME)) {
+    if (
+      !refreshToken ||
+      Date.now() - refreshDateTime > REFRESH_TOKEN_EXPIRATION_TIME
+    ) {
       tokenResponse = await getTokensFromAuthorization(clientId, clientSecret);
     } else {
       const params = new URLSearchParams();
@@ -193,7 +204,7 @@ async function refreshAccessToken() {
     await chrome.storage.local.set({
       access_token: accessToken,
       refresh_token: refreshToken,
-      refreshDateTime: refreshDateTime
+      refreshDateTime: refreshDateTime,
     });
 
     return;
@@ -395,6 +406,29 @@ async function constructOutput(format, search, replace) {
   return output;
 }
 
+/**
+ * chrome.storage.syncに格納されたルールに従ってパスを変換する。
+ *
+ * @param {string} path - 変換するパス
+ * @returns {Promise<string>} - 変換後のパスを解決するPromise
+ */
+async function convertPath(path) {
+  const options = await chrome.storage.sync.get();
+  const pathConversionRules = options.pathConversionRules;
+  if (pathConversionRules && pathConversionRules.length > 0) {
+    for (let i = 0; i < pathConversionRules.length; i++) {
+      const search = pathConversionRules[i].search;
+      const replace = pathConversionRules[i].replace;
+
+      if (search && replace) {
+        const regex = new RegExp(search, "g");
+        path = path.replace(regex, replace);
+      }
+    }
+  }
+  return path;
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   // addListenerで登録するイベントリスナ自体をasyncにしてしまうと
   // returnがPromiseになってしまい、
@@ -420,11 +454,36 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       });
 
       sendResponse({});
-    } else if (message["method"] === "openFolder" || message["method"] === "openFile") {
+    } else if (
+      message["method"] === "openFolder" ||
+      message["method"] === "openFile"
+    ) {
       const path = await constructOutput("${boxdrive_win}");
 
       try {
-        const response = await chrome.runtime.sendNativeMessage("jp.toke.boxutils_helper", {method: message["method"], path: path});
+        const response = await chrome.runtime.sendNativeMessage(
+          "jp.toke.boxutils_helper",
+          { method: message["method"], path: path }
+        );
+        console.log("Response", response);
+      } catch (err) {
+        console.log("Error", err);
+      }
+
+      sendResponse({});
+    } else if (
+      message["method"] === "openFolderFromText" ||
+      message["method"] === "openFileFromText"
+    ) {
+      const clipboardText = message["args"][0];
+      const path = await convertPath(clipboardText);
+      console.log(path);
+
+      try {
+        const response = await chrome.runtime.sendNativeMessage(
+          "jp.toke.boxutils_helper",
+          { method: message["method"].replace("FromText", ""), path: path }
+        );
         console.log("Response", response);
       } catch (err) {
         console.log("Error", err);

@@ -1,12 +1,19 @@
 "use strict";
 
-function sendToBackground(event) {
+async function sendToBackground(event) {
   let method;
+  let args;
 
   if (event.currentTarget.id === "open_folder") {
     method = "openFolder";
   } else if (event.currentTarget.id === "open_file") {
     method = "openFile";
+  } else if (event.currentTarget.id === "open_folder_from_clipboard") {
+    method = "openFolderFromText";
+    args = [readClipboard()];
+  } else if (event.currentTarget.id === "open_file_from_clipboard") {
+    method = "openFileFromText";
+    args = [readClipboard()];
   } else if (event.currentTarget.id.match(/^copy\d+$/)) {
     method = "sendCopyRequest";
   }
@@ -15,6 +22,7 @@ function sendToBackground(event) {
     {
       method: method,
       type: event.currentTarget.id,
+      args: args,
     },
     () => {
       window.close();
@@ -22,12 +30,29 @@ function sendToBackground(event) {
   );
 }
 
+/**
+ * クリップボードの中のテキストを取得する
+ * @returns {string} - クリップボードから取得したテキスト
+ */
+function readClipboard() {
+  const copyTo = document.createElement("textarea");
+  document.body.appendChild(copyTo);
+  copyTo.focus();
+  document.execCommand("paste");
+
+  const clipboardText = copyTo.value;
+  document.body.removeChild(copyTo);
+
+  return clipboardText;
+}
+
 async function setText() {
   const options = await chrome.storage.sync.get();
 
   const messageElement = document.getElementById("message");
   if (!options.clientId || !options.clientSecret) {
-    messageElement.innerHTML = "clientId or clientSecret is missing. Set the Client ID and Client Secret in the options of this extension.";
+    messageElement.innerHTML =
+      "clientId or clientSecret is missing. Set the Client ID and Client Secret in the options of this extension.";
 
     const optionLink = document.createElement("a");
     optionLink.href = chrome.runtime.getURL("src/options.html");
@@ -52,8 +77,18 @@ async function setText() {
 
 document.addEventListener("DOMContentLoaded", setText);
 
-document.getElementById("open_folder").addEventListener("click", sendToBackground, true);
-document.getElementById("open_file").addEventListener("click", sendToBackground, true);
+document
+  .getElementById("open_folder")
+  .addEventListener("click", sendToBackground, true);
+document
+  .getElementById("open_file")
+  .addEventListener("click", sendToBackground, true);
+document
+  .getElementById("open_folder_from_clipboard")
+  .addEventListener("click", sendToBackground, true);
+document
+  .getElementById("open_file_from_clipboard")
+  .addEventListener("click", sendToBackground, true);
 document.getElementById("copy1").addEventListener("click", sendToBackground);
 document.getElementById("copy2").addEventListener("click", sendToBackground);
 document.getElementById("copy3").addEventListener("click", sendToBackground);
