@@ -61,9 +61,24 @@ padding: 0 5px;
 <h1 data-number="1" id="boxutils"><span class="header-section-number">1</span> BoxUtils</h1>
 <p>BoxUtils は <a href="https://www.box.com/">Box</a> のためのユーティリティソフトウェアとなるChrome拡張機能である。 現在は主に下記の機能がある。</p>
 <ul>
-<li>BoxのWebサイト上で見ているファイルやフォルダについて、直接ローカルのWindows上のエクスプローラーでフォルダを開いたり、関連付けれらたアプリケーションでファイルを開く機能 (別途 <a href="https://github.com/sattoke/BoxUtilsHelper">BoxUtilsHelper</a> のインストールが必要)</li>
-<li>BoxのWebサイト上で見ているファイルやフォルダについて、Box Driveで開くためのパスを取得や変換、クリップボードへコピーする機能</li>
-<li>BoxのWebサイト上で見ているファイルやフォルダについて、更新日時を常に秒単位まで表示し、更新日時からの経過時間に応じて色付けをする機能</li>
+<li>BoxのWebサイト上で見ているファイルやフォルダについて、直接ローカルのWindows上のエクスプローラーでフォルダを開いたり、関連付けれらたアプリケーションでファイルを開く機能
+<ul>
+<li>[注意] この機能には別途 <a href="https://www.box.com/ja-jp/drive">Box Drive</a> および <a href="https://github.com/sattoke/BoxUtilsHelper">BoxUtilsHelper</a> のインストールが必要</li>
+<li>[目的] フォルダツリーの探索などエクスプローラでの操作の方が慣れている人向け。</li>
+</ul></li>
+<li>クリップボードにコピーされているパス名から直接ローカルのWindows上のエクスプローラーでフォルダを開いたり、関連付けれらたアプリケーションでファイルを開く機能
+<ul>
+<li>[注意] この機能には別途 <a href="https://www.box.com/ja-jp/drive">Box Drive</a> および <a href="https://github.com/sattoke/BoxUtilsHelper">BoxUtilsHelper</a> のインストールが必要</li>
+<li>[目的] この機能にはパスの変換機能が含まれており、主にUNCなどでアクセスする通常のファイルサーバをBoxに移行したとき、その移行先のパスに自動で変換することを目的にしている(例えば、 <code>\\some-server\foo\bar</code> を <code>%USERPROFILE%\Box\foo\bar</code> に変換したりなど)。</li>
+</ul></li>
+<li>BoxのWebサイト上で見ているファイルやフォルダについて、Box Driveで開くためのパスを取得や変換、クリップボードへコピーする機能
+<ul>
+<li>[目的] この機能にはパスの変換機能が含まれており、主にBoxの「共有」機能の特性より「共有した人」と「共有された人」でパスの見え方が異なることを吸収するためなどに用いる(例えば、URLだけではなくBox Driveでのパス名も他者に伝えたい場合に、 <code>%USERPROFILE%\Box\foo\some-share</code> を <code>%USERPROFILE%\Box\some-share</code> に変換したりなど)。その他、markdown形式のリンク作成などにも用いる(例えば <code>[&lt;Box Driveのパス&gt;](&lt;BoxのWebサイト上でのURL&gt;)</code> ようなリンクを作成するなど)。</li>
+</ul></li>
+<li>BoxのWebサイト上で見ているファイルやフォルダについて、更新日時を常に秒単位まで表示し、更新日時からの経過時間に応じて色付けをする機能
+<ul>
+<li>[目的] BoxのWeb上から見た場合、更新日時が「今日」などと丸められてしまうためそれを詳細表示したい場合に用いる。</li>
+</ul></li>
 </ul>
 <h1 data-number="2" id="拡張機能のインストール方法"><span class="header-section-number">2</span> 拡張機能のインストール方法</h1>
 <p>chrome ウェブストアからインストールする方法と、GitHubにあるコードからインストールする方法の2種類がある。 後者は開発者向けの方法のため、通常はchrome ウェブストアからインストールすること(インストールが簡単)。</p>
@@ -107,22 +122,33 @@ padding: 0 5px;
 </ol>
 <h1 data-number="4" id="使用方法"><span class="header-section-number">4</span> 使用方法</h1>
 <ul>
-<li>BoxのWebサイト上で見ているファイルやフォルダについて、直接ローカルのWindows上のエクスプローラーでフォルダを開いたり、関連付けれらたアプリケーションでファイルを開く機能 (別途 <a href="https://github.com/sattoke/BoxUtilsHelper">BoxUtilsHelper</a> のインストールが必要)
+<li>BoxのWebサイト上で見ているファイルやフォルダについて、直接ローカルのWindows上のエクスプローラーでフォルダを開いたり、関連付けれらたアプリケーションでファイルを開く機能
 <ul>
+<li>[注意] この機能には別途 <a href="https://www.box.com/ja-jp/drive">Box Drive</a> および <a href="https://github.com/sattoke/BoxUtilsHelper">BoxUtilsHelper</a> のインストールが必要</li>
+<li>[目的] フォルダツリーの探索などエクスプローラでの操作の方が慣れている人向け。</li>
 <li><a href="https://www.box.com/">Box</a> へアクセスし通常通りファイルやフォルダのページを表示した状態で、Chromeのアドレスバーの右の拡張機能のアイコン一覧にあるBoxUtilsのアイコン(青いフォルダマーク)をクリックして開くポップアップメニューで、一番上の左にあるフォルダのアイコンをクリックするとエクスプローラー (explorer.exe) で当該フォルダを開く(ファイルのページを表示している場合は当該ファイルを格納しているフォルダを開く）。</li>
 <li>同様にポップアップメニューの一番上の右にあるファイルのアイコンをクリックするとローカルのWindows上の当該ファイルに関連付けられたアプリケーションでファイルを開く（フォルダのページを開いている場合は当該フォルダをエクスプーラで開く）。</li>
 </ul></li>
+<li>クリップボードにコピーされているパス名から直接ローカルのWindows上のエクスプローラーでフォルダを開いたり、関連付けれらたアプリケーションでファイルを開く機能
+<ul>
+<li>[注意] この機能には別途 <a href="https://www.box.com/ja-jp/drive">Box Drive</a> および <a href="https://github.com/sattoke/BoxUtilsHelper">BoxUtilsHelper</a> のインストールが必要</li>
+<li>[目的] この機能にはパスの変換機能が含まれており、主にUNCなどでアクセスする通常のファイルサーバをBoxに移行したとき、その移行先のパスに自動で変換することを目的にしている(例えば、 <code>\\some-server\foo\bar</code> を <code>%USERPROFILE%\Box\foo\bar</code> に変換したりなど)。</li>
+<li>使用方法は上述のBoxのWebサイト上で見ているファイルやフォルダを開く機能とほぼ同等である。フォルダとファイルのアイコンの意味も同様である。ただし、成就の機能が現在開いているBoxのWebサイトに対応するファイルやフォルダを開くのに対し、当機能はクリップボードにコピーされているパスに対して動作することが異なる。</li>
+<li>オプション画面の [Path Conversion] タブの箇所で[目的]に記載した内容の設定を行うことができる。</li>
+</ul></li>
 <li>BoxのWebサイト上で見ているファイルやフォルダについて、Box Driveで開くためのパスを取得や変換、クリップボードへコピーする機能
 <ul>
+<li>[目的] この機能にはパスの変換機能が含まれており、主にBoxの「共有」機能の特性より「共有した人」と「共有された人」でパスの見え方が異なることを吸収するためなどに用いる(例えば、URLだけではなくBox Driveでのパス名も他者に伝えたい場合に、 <code>%USERPROFILE%\Box\foo\some-share</code> を <code>%USERPROFILE%\Box\some-share</code> に変換したりなど)。その他、markdown形式のリンク作成などにも用いる(例えば <code>[&lt;Box Driveのパス&gt;](&lt;BoxのWebサイト上でのURL&gt;)</code> ようなリンクを作成するなど)。</li>
 <li><a href="https://www.box.com/">Box</a> へアクセスし通常通りファイルやフォルダのページを表示した状態で、Chromeのアドレスバーの右の拡張機能のアイコン一覧にあるBoxUtilsのアイコン(青いフォルダマーク)をクリックして開くポップアップメニューで、5つ並んだボタンから所望のコピー方式をクリックするとクリップボードにパス等がコピーされる。</li>
 <li>5つのボタンで各々何がコピーされるかはBoxUtilsのオプション画面でカスタマイズが可能である。詳細はオプション画面を参照。</li>
 </ul></li>
 <li>BoxのWebサイト上で見ているファイルやフォルダについて、更新日時を常に秒単位まで表示し、更新日時からの経過時間に応じて色付けをする機能
 <ul>
-<li>特に操作は不要で自動で表示する。</li>
+<li>[目的] BoxのWeb上から見た場合、更新日時が「今日」などと丸められてしまうためそれを詳細表示したい場合に用いる。</li>
+<li>特に操作は不要でデフォルトで詳細表示が有効になっている。オプション画面の設定で詳細表示の有効/無効を切り替えできる。</li>
 </ul></li>
 </ul>
-<p>初回実行時やトークンの有効期限が切れた場合などは、Boxの認証画面と認可画面が表示されることがあるので適宜BoxのIDパスワードの入力を行うこと。一度認可した後は最大60日間(リフレッシュトークンの有効期限)、認証や認可は不要となる (cf. <a href="https://ja.developer.box.com/guides/authentication/tokens/">トークン - Box開発者向けドキュメントポータル</a> )。</p>
+<p>初回実行時やトークンの有効期限が切れた場合などは、Boxの認証画面と認可画面が表示されることがあるので適宜BoxのIDパスワードの入力を行うこと。一度認可した後は、本拡張機能を最後に利用してから最大60日間(リフレッシュトークンの有効期限)はユーザによる認証や認可の操作は不要となる (cf. <a href="https://ja.developer.box.com/guides/authentication/tokens/">トークン - Box開発者向けドキュメントポータル</a> )。</p>
 <h1 data-number="5" id="リソース"><span class="header-section-number">5</span> リソース</h1>
 <ul>
 <li>アイコンは下記の <a href="https://icon-rainbow.com/">icon rainbow</a> や <a href="https://fonts.google.com/">Google Fonts</a> の素材を使用。
