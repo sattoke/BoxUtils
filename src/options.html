@@ -12,6 +12,7 @@
         <li class="tab active">Box</li>
         <li class="tab">Path Copy</li>
         <li class="tab">Path Conversion</li>
+        <li class="tab">Web appearance</li>
         <li class="tab">Import/Export</li>
         <li class="tab">Debug</li>
       </ul>
@@ -20,11 +21,11 @@
         <div class="panel show">
           <h2 class="panel-h2">OAuth 2.0 Client Information for box</h2>
           <div>
-            <label>Client ID</label>
+            <label class="label-for-text">Client ID</label>
             <input type="text" id="clientId" size="64" />
           </div>
           <div>
-            <label>Client Secret</label>
+            <label class="label-for-text">Client Secret</label>
             <input type="password" id="clientSecret" size="64" />
           </div>
           <div class="description">
@@ -38,91 +39,91 @@
           </div>
           <h2 class="panel-h2">Copy setting 1</h2>
           <div>
-            <label>Name</label>
+            <label class="label-for-text">Name</label>
             <input type="text" id="name1" size="64" />
           </div>
           <div>
-            <label>Output format</label>
+            <label class="label-for-text">Output format</label>
             <input type="text" id="output1" size="64" />
           </div>
           <div>
-            <label>Search string for replace</label>
+            <label class="label-for-text">Search string for replace</label>
             <input type="text" id="search1" size="64" />
           </div>
           <div>
-            <label>String after replaced</label>
+            <label class="label-for-text">String after replaced</label>
             <input type="text" id="replace1" size="64" />
           </div>
 
           <h2 class="panel-h2">Copy setting 2</h2>
           <div>
-            <label>Name</label>
+            <label class="label-for-text">Name</label>
             <input type="text" id="name2" size="64" />
           </div>
           <div>
-            <label>Output format</label>
+            <label class="label-for-text">Output format</label>
             <input type="text" id="output2" size="64" />
           </div>
           <div>
-            <label>Search string for replace</label>
+            <label class="label-for-text">Search string for replace</label>
             <input type="text" id="search2" size="64" />
           </div>
           <div>
-            <label>String after replaced</label>
+            <label class="label-for-text">String after replaced</label>
             <input type="text" id="replace2" size="64" />
           </div>
 
           <h2 class="panel-h2">Copy setting 3</h2>
           <div>
-            <label>Name</label>
+            <label class="label-for-text">Name</label>
             <input type="text" id="name3" size="64" />
           </div>
           <div>
-            <label>Output format</label>
+            <label class="label-for-text">Output format</label>
             <input type="text" id="output3" size="64" />
           </div>
           <div>
-            <label>Search string for replace</label>
+            <label class="label-for-text">Search string for replace</label>
             <input type="text" id="search3" size="64" />
           </div>
           <div>
-            <label>String after replaced</label>
+            <label class="label-for-text">String after replaced</label>
             <input type="text" id="replace3" size="64" />
           </div>
 
           <h2 class="panel-h2">Copy setting 4</h2>
           <div>
-            <label>Name</label>
+            <label class="label-for-text">Name</label>
             <input type="text" id="name4" size="64" />
           </div>
           <div>
-            <label>Output format</label>
+            <label class="label-for-text">Output format</label>
             <input type="text" id="output4" size="64" />
           </div>
           <div>
-            <label>Search string for replace</label>
+            <label class="label-for-text">Search string for replace</label>
             <input type="text" id="search4" size="64" />
           </div>
           <div>
-            <label>String after replaced</label>
+            <label class="label-for-text">String after replaced</label>
             <input type="text" id="replace4" size="64" />
           </div>
 
           <h2 class="panel-h2">Copy setting 5</h2>
           <div>
-            <label>Name</label>
+            <label class="label-for-text">Name</label>
             <input type="text" id="name5" size="64" />
           </div>
           <div>
-            <label>Output format</label>
+            <label class="label-for-text">Output format</label>
             <input type="text" id="output5" size="64" />
           </div>
           <div>
-            <label>Search string for replace</label>
+            <label class="label-for-text">Search string for replace</label>
             <input type="text" id="search5" size="64" />
           </div>
           <div>
-            <label>String after replaced</label>
+            <label class="label-for-text">String after replaced</label>
             <input type="text" id="replace5" size="64" />
           </div>
           <h2 class="panel-h2">[Appendix] Output format</h2>
@@ -197,6 +198,16 @@
             </div>
             -->
             <div id="addInputPair" class="button">Add</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-description">
+            These options are for customizing the appearance of the Box website.
+          </div>
+          <div class="container">
+            <input type="checkbox" id="detailed-datetime"></input>
+            <label for="detailed-datetime">Enable detailed date and time display</label>
           </div>
         </div>
 

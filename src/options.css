@@ -10,7 +10,7 @@ a {
   color: #4981b1;
 }
 
-label {
+.label-for-text {
   display: inline-block;
   text-align: right;
   width: 15em;

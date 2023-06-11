@@ -84,6 +84,13 @@ async function rewriteColumns() {
   if (!location.pathname.startsWith("/folder/")) {
     return;
   }
+
+  const options = await chrome.storage.sync.get();
+
+  if (!options["detailedDateTime"]) {
+    return;
+  }
+
   const filesList = document.getElementsByClassName("files-list")[0];
 
   if (filesList === undefined) {

@@ -24,6 +24,8 @@ async function saveOptions() {
   const search5 = document.getElementById("search5").value;
   const replace5 = document.getElementById("replace5").value;
 
+  const detailedDateTime = document.getElementById("detailed-datetime").checked;
+
   const searchInputs = document.getElementsByClassName(
     "path-conversion-search"
   );
@@ -69,6 +71,7 @@ async function saveOptions() {
       output5: output5,
       search5: search5,
       replace5: replace5,
+      detailedDateTime: detailedDateTime,
       pathConversionRules: pathConversionRules,
     },
     () => {
@@ -105,6 +108,8 @@ async function restoreOptions() {
   document.getElementById("output5").value = options.output5;
   document.getElementById("search5").value = options.search5;
   document.getElementById("replace5").value = options.replace5;
+
+  document.getElementById("detailed-datetime").checked = options.detailedDateTime;
 
   const container = document.getElementById("search-replace-container");
   const addButton = document.getElementById("addInputPair");

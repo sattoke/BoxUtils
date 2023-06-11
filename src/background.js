@@ -30,6 +30,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   options["output5"] = "";
   options["search5"] = "";
   options["replace5"] = "";
+  options["detailedDateTime"] = true;
 
   await chrome.storage.sync.set(options);
 
