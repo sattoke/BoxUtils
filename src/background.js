@@ -1,35 +1,82 @@
 "use strict";
 
+const STORAGE_VERSION = 2;
+
 chrome.runtime.onInstalled.addListener(async () => {
   const options = await chrome.storage.sync.get();
 
+  console.log("initialized");
+  console.log(options);
+
+  const copySettings = [];
+
   if (options["initialized"]) {
+    if (Object.hasOwn(options, "storageVersion")) {
+      return;
+    } else {
+      // options["storageVersion"] が存在しない場合、
+      // Copy Settingが5つ固定の古いバージョンのため
+      // データ変換を行う
+
+      for (let i = 1; i <= 5; i++) {
+        if (options["output" + i]) {
+          copySettings.push({
+            name: options["name" + i],
+            output: options["output" + i],
+            search: options["search" + i],
+            replace: options["replace" + i],
+          });
+        }
+        delete options["name" + i];
+        delete options["output" + i];
+        delete options["search" + i];
+        delete options["replace" + i];
+      }
+
+      options["copySettings"] = copySettings;
+      options["storageVersion"] = STORAGE_VERSION;
+
+      await chrome.storage.sync.clear();
+      await chrome.storage.sync.set(options);
+
+      console.log("converted");
+      console.log(options);
+    }
     return;
   }
 
   options["initialized"] = true;
+  options["storageVersion"] = STORAGE_VERSION;
   options["clientId"] = "";
   options["clientSecret"] = "";
-  options["name1"] = "Simple URL";
-  options["output1"] = "${url_simple}";
-  options["search1"] = "";
-  options["replace1"] = "";
-  options["name2"] = "Box Drive (win)";
-  options["output2"] = "${boxdrive_win}";
-  options["search2"] = "";
-  options["replace2"] = "";
-  options["name3"] = "Box Drive and Simple URL";
-  options["output3"] = "[BoxDrive] ${boxdrive_win}\\n[BoxWebUI] ${url_simple}";
-  options["search3"] = "";
-  options["replace3"] = "";
-  options["name4"] = "markdown";
-  options["output4"] = "[${boxdrive_win}](${url_simple})";
-  options["search4"] = "";
-  options["replace4"] = "";
-  options["name5"] = "";
-  options["output5"] = "";
-  options["search5"] = "";
-  options["replace5"] = "";
+
+  const defaultCopySettings = [];
+  defaultCopySettings.push({
+    name: "Simple URL",
+    output: "${url_simple}",
+    search: "",
+    replace: "",
+  });
+  defaultCopySettings.push({
+    name: "Box Drive (win)",
+    output: "${boxdrive_win}",
+    search: "",
+    replace: "",
+  });
+  defaultCopySettings.push({
+    name: "Box Drive and Simple URL",
+    output: "[BoxDrive] ${boxdrive_win}\\n[BoxWebUI] ${url_simple}",
+    search: "",
+    replace: "",
+  });
+  defaultCopySettings.push({
+    name: "markdown",
+    output: "[${boxdrive_win}](${url_simple})",
+    search: "",
+    replace: "",
+  });
+  options["copySettings"] = copySettings;
+
   options["detailedDateTime"] = true;
 
   await chrome.storage.sync.set(options);
@@ -436,16 +483,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   // return trueができず非同期処理を待たなくなることに注意
   (async () => {
     if (message["method"] === "sendCopyRequest") {
-      if (message["type"].slice(0, 4) !== "copy") {
-        sendResponse({});
-        return;
-      }
-
-      const index = message["type"].slice(4);
+      const index = message["args"][0];
       const options = await chrome.storage.sync.get();
-      const output = options["output" + index];
-      const search = options["search" + index];
-      const replace = options["replace" + index];
+      const copySetting = options["copySettings"][index];
+      const output = copySetting["output"];
+      const search = copySetting["search"];
+      const replace = copySetting["replace"];
       const res = await constructOutput(output, search, replace);
       const [tabid, _taburl] = await getCurrentTabInfo();
 

@@ -1,28 +1,30 @@
 "use strict";
 
+const STORAGE_VERSION = 2;
+
+/**
+ * オプション設定の画面の値をchrome.storageに保存する。
+ */
 async function saveOptions() {
   const clientId = document.getElementById("clientId").value;
   const clientSecret = document.getElementById("clientSecret").value;
-  const name1 = document.getElementById("name1").value;
-  const output1 = document.getElementById("output1").value;
-  const search1 = document.getElementById("search1").value;
-  const replace1 = document.getElementById("replace1").value;
-  const name2 = document.getElementById("name2").value;
-  const output2 = document.getElementById("output2").value;
-  const search2 = document.getElementById("search2").value;
-  const replace2 = document.getElementById("replace2").value;
-  const name3 = document.getElementById("name3").value;
-  const output3 = document.getElementById("output3").value;
-  const search3 = document.getElementById("search3").value;
-  const replace3 = document.getElementById("replace3").value;
-  const name4 = document.getElementById("name4").value;
-  const output4 = document.getElementById("output4").value;
-  const search4 = document.getElementById("search4").value;
-  const replace4 = document.getElementById("replace4").value;
-  const name5 = document.getElementById("name5").value;
-  const output5 = document.getElementById("output5").value;
-  const search5 = document.getElementById("search5").value;
-  const replace5 = document.getElementById("replace5").value;
+
+  const copySettings = [];
+  // template要素内のものは対象としないように注意
+  const copySettingElements = document.querySelectorAll(
+    "#copy-settings-container > .copy-setting"
+  );
+  for (const copySettingElement of copySettingElements) {
+    copySettings.push({
+      name: copySettingElement.querySelector(".copy-setting-input-name").value,
+      output: copySettingElement.querySelector(".copy-setting-input-output")
+        .value,
+      search: copySettingElement.querySelector(".copy-setting-input-search")
+        .value,
+      replace: copySettingElement.querySelector(".copy-setting-input-replace")
+        .value,
+    });
+  }
 
   const detailedDateTime = document.getElementById("detailed-datetime").checked;
 
@@ -49,28 +51,10 @@ async function saveOptions() {
   await chrome.storage.sync.set(
     {
       initialized: true,
+      storageVersion: STORAGE_VERSION,
       clientId: clientId,
       clientSecret: clientSecret,
-      name1: name1,
-      output1: output1,
-      search1: search1,
-      replace1: replace1,
-      name2: name2,
-      output2: output2,
-      search2: search2,
-      replace2: replace2,
-      name3: name3,
-      output3: output3,
-      search3: search3,
-      replace3: replace3,
-      name4: name4,
-      output4: output4,
-      search4: search4,
-      replace4: replace4,
-      name5: name5,
-      output5: output5,
-      search5: search5,
-      replace5: replace5,
+      copySettings: copySettings,
       detailedDateTime: detailedDateTime,
       pathConversionRules: pathConversionRules,
     },
@@ -84,32 +68,46 @@ async function saveOptions() {
   );
 }
 
+/**
+ * chrome.storageの保存値を元にオプション設定を画面に表示する。
+ */
 async function restoreOptions() {
   const options = await chrome.storage.sync.get();
+
   document.getElementById("clientId").value = options.clientId;
   document.getElementById("clientSecret").value = options.clientSecret;
-  document.getElementById("name1").value = options.name1;
-  document.getElementById("output1").value = options.output1;
-  document.getElementById("search1").value = options.search1;
-  document.getElementById("replace1").value = options.replace1;
-  document.getElementById("name2").value = options.name2;
-  document.getElementById("output2").value = options.output2;
-  document.getElementById("search2").value = options.search2;
-  document.getElementById("replace2").value = options.replace2;
-  document.getElementById("name3").value = options.name3;
-  document.getElementById("output3").value = options.output3;
-  document.getElementById("search3").value = options.search3;
-  document.getElementById("replace3").value = options.replace3;
-  document.getElementById("name4").value = options.name4;
-  document.getElementById("output4").value = options.output4;
-  document.getElementById("search4").value = options.search4;
-  document.getElementById("replace4").value = options.replace4;
-  document.getElementById("name5").value = options.name5;
-  document.getElementById("output5").value = options.output5;
-  document.getElementById("search5").value = options.search5;
-  document.getElementById("replace5").value = options.replace5;
 
-  document.getElementById("detailed-datetime").checked = options.detailedDateTime;
+  const copySettings = options.copySettings;
+  const copySettingTemplate = document.getElementById("copy-setting-template");
+  const copySettingsContainer = document.getElementById(
+    "copy-settings-container"
+  );
+
+  if (copySettings && copySettings.length > 0) {
+    for (let i = 0; i < copySettings.length; i++) {
+      const setting = copySettingTemplate.content.cloneNode(true);
+
+      setting.querySelector(
+        ".copy-setting-title"
+      ).textContent = `Copy Setting ${i + 1}`;
+      setting.querySelector(".copy-setting-input-name").value =
+        copySettings[i]["name"];
+      setting.querySelector(".copy-setting-input-output").value =
+        copySettings[i]["output"];
+      setting.querySelector(".copy-setting-input-search").value =
+        copySettings[i]["search"];
+      setting.querySelector(".copy-setting-input-replace").value =
+        copySettings[i]["replace"];
+      setting.querySelector(".copy-setting-remove").onclick = (event) => {
+        console.log(setting);
+        copySettingsContainer.removeChild(event.target.parentNode.parentNode);
+      };
+      copySettingsContainer.appendChild(setting);
+    }
+  }
+
+  document.getElementById("detailed-datetime").checked =
+    options.detailedDateTime;
 
   const container = document.getElementById("search-replace-container");
   const addButton = document.getElementById("addInputPair");
@@ -169,6 +167,43 @@ async function restoreOptions() {
       addButton.before(div);
     }
   }
+}
+
+/**
+ * Copy Setting用の入力欄を追加する。
+ */
+function addCopySetting() {
+  const copySettingTemplate = document.getElementById("copy-setting-template");
+  const copySettingsContainer = document.getElementById(
+    "copy-settings-container"
+  );
+  const copySettingElements = document.querySelectorAll(
+    "#copy-settings-container > .copy-setting"
+  );
+  const copySettingCount = copySettingElements.length;
+
+  const setting = copySettingTemplate.content.cloneNode(true);
+  const copySettingContainer = setting.querySelector(".copy-setting");
+
+  setting.querySelector(".copy-setting-title").textContent = `Copy Setting ${
+    copySettingCount + 1
+  }`;
+  setting.querySelector(".copy-setting-remove").onclick = () => {
+    copySettingsContainer.removeChild(copySettingContainer);
+
+    // 途中の設定欄を削除したときのために全設定の通番を振りなおす。
+    // template要素内のものは対象としないように注意。
+    const copySettingElementsNew = document.querySelectorAll(
+      "#copy-settings-container > .copy-setting"
+    );
+    const copySettingCountNew = copySettingElementsNew.length;
+    for (let i = 0; i < copySettingCountNew; i++) {
+      copySettingElementsNew[i].querySelector(
+        ".copy-setting-title"
+      ).textContent = `Copy Setting ${i + 1}`;
+    }
+  };
+  copySettingsContainer.appendChild(copySettingContainer);
 }
 
 /**
@@ -299,6 +334,9 @@ document
   .getElementById("clearRefreshToken")
   .addEventListener("click", clearToken);
 
+document
+  .getElementById("add-copy-setting")
+  .addEventListener("click", addCopySetting);
 document.getElementById("addInputPair").addEventListener("click", addInputPair);
 document.getElementById("export").addEventListener("click", exportOptions);
 document.getElementById("import").addEventListener("click", importOptions);

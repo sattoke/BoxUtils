@@ -14,14 +14,15 @@ async function sendToBackground(event) {
   } else if (event.currentTarget.id === "open_file_from_clipboard") {
     method = "openFileFromText";
     args = [readClipboard()];
-  } else if (event.currentTarget.id.match(/^copy\d+$/)) {
+  } else if (event.currentTarget.classList.contains("copy-type")) {
+    const index = event.currentTarget.id.match(/(?<=name)\d+/)[0];
     method = "sendCopyRequest";
+    args = [index];
   }
 
   chrome.runtime.sendMessage(
     {
       method: method,
-      type: event.currentTarget.id,
       args: args,
     },
     () => {
@@ -68,11 +69,24 @@ async function setText() {
     messageElement.style.display = "none";
   }
 
-  document.getElementById("copy1").textContent = options.name1 ?? "";
-  document.getElementById("copy2").textContent = options.name2 ?? "";
-  document.getElementById("copy3").textContent = options.name3 ?? "";
-  document.getElementById("copy4").textContent = options.name4 ?? "";
-  document.getElementById("copy5").textContent = options.name5 ?? "";
+  const copySettings = options.copySettings;
+  const copySettingButtonTemplate = document.getElementById(
+    "copy-setting-button-template"
+  );
+  const copySettingsButtonsElement = document.getElementById(
+    "copy-settings-buttons"
+  );
+
+  if (copySettings && copySettings.length > 0) {
+    for (let i = 0; i < copySettings.length; i++) {
+      const setting = copySettingButtonTemplate.content.cloneNode(true);
+      const settingButtonElement = setting.querySelector(".copy-type");
+      settingButtonElement.textContent = copySettings[i]["name"];
+      settingButtonElement.id = `name${i}`;
+      copySettingsButtonsElement.appendChild(settingButtonElement);
+      settingButtonElement.addEventListener("click", sendToBackground);
+    }
+  }
 }
 
 document.addEventListener("DOMContentLoaded", setText);
@@ -89,8 +103,3 @@ document
 document
   .getElementById("open_file_from_clipboard")
   .addEventListener("click", sendToBackground, true);
-document.getElementById("copy1").addEventListener("click", sendToBackground);
-document.getElementById("copy2").addEventListener("click", sendToBackground);
-document.getElementById("copy3").addEventListener("click", sendToBackground);
-document.getElementById("copy4").addEventListener("click", sendToBackground);
-document.getElementById("copy5").addEventListener("click", sendToBackground);

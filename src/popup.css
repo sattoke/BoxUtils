@@ -25,7 +25,7 @@ body {
   background-color: #777;
 }
 
-.copy_type {
+.copy-type {
   display: block;
   color: #fff;
   background-color: #333;
@@ -34,7 +34,7 @@ body {
   text-align: center;
 }
 
-.copy_type:hover {
+.copy-type:hover {
   background-color: #777;
 }
 
