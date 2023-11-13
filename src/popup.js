@@ -27,7 +27,7 @@ async function sendToBackground(event) {
     },
     () => {
       window.close();
-    }
+    },
   );
 }
 
@@ -71,10 +71,10 @@ async function setText() {
 
   const copySettings = options.copySettings;
   const copySettingButtonTemplate = document.getElementById(
-    "copy-setting-button-template"
+    "copy-setting-button-template",
   );
   const copySettingsButtonsElement = document.getElementById(
-    "copy-settings-buttons"
+    "copy-settings-buttons",
   );
 
   if (copySettings && copySettings.length > 0) {

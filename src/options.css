@@ -106,7 +106,57 @@ code {
   width: 10%;
 }
 
+#badge-settings-outer,
 #search-replace-container {
   display: block;
   margin: 10px 40px 10px 40px;
+}
+
+#badge-settings-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+#badge-settings-table th,
+#badge-settings-table td {
+  border: solid 1px #fff;
+  padding: 0;
+}
+
+#badge-settings-table input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#badge-settings-table input[type="color"] {
+  height: 1.6em;
+}
+
+#badge-settings-table input[type="number"]::-webkit-outer-spin-button,
+#badge-settings-table input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.badge-settings-th-start,
+.badge-settings-th-length {
+  width: 5em;
+}
+
+.badge-settings-th-action {
+  width: 6em;
+}
+
+.badge-settings-th-sign {
+  width: 2em;
+}
+
+.badge-settings-th-fgColor,
+.badge-settings-th-bgColor {
+  width: 5em;
+}
+
+.badge-setting-remove {
+  width: 100%;
 }

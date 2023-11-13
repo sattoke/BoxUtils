@@ -95,7 +95,7 @@ async function getCurrentTabInfo() {
 }
 
 function getURLTypeAndIdentifier(url) {
-  const [_, type, id] = url.match(/https:\/\/.*\.?app.box.com\/(.+)\/(\d+)/);
+  const [_, type, id] = url.match(/https:\/\/.*\.?app.box.com\/([^/]+)\/(\d+)/);
   return [type, id];
 }
 
@@ -109,6 +109,26 @@ function getApiEndpoint(taburl) {
   return `https://api.box.com/2.0/${type}s/${id}`;
 }
 
+function getContentApiEndpoint(taburl) {
+  const [type, id] = getURLTypeAndIdentifier(taburl);
+
+  if (type !== "file") {
+    throw new Error("Invalid URL");
+  }
+
+  return `https://api.box.com/2.0/${type}s/${id}/content`;
+}
+
+function getVersionsApiEndpoint(taburl) {
+  const [type, id] = getURLTypeAndIdentifier(taburl);
+
+  if (type !== "file") {
+    throw new Error("Invalid URL");
+  }
+
+  return `https://api.box.com/2.0/${type}s/${id}/versions`;
+}
+
 async function getInfo(url) {
   let accessToken;
   let info;
@@ -118,13 +138,176 @@ async function getInfo(url) {
   } catch (error) {
     console.log(error);
     console.log(
-      "Refresh the access token since the file information acquisition failed for some reason."
+      "Refresh the access token since the file information acquisition failed for some reason.",
     );
     accessToken = await getAccessToken(true);
     info = await getFileDirInfo(url, accessToken);
   }
 
   return info;
+}
+
+/**
+ * バッジ表示に必要な情報を取得
+ *
+ * @param {string} url - バッジ情報を取得する対象のURL。
+ * @param {string} versionNo - バージョン番号。"V1" や "V2" という形式で表される。
+ * @returns {Promise<Object>} バッジ情報を含むオブジェクトを解決するPromise。
+ */
+async function getBadge(url, versionNo) {
+  let accessToken;
+  let fileInfo;
+  let dataBytes;
+  let versions;
+  let versionList;
+
+  const options = await chrome.storage.sync.get();
+  const badgeSettings = options.badgeSettings;
+  if (badgeSettings && badgeSettings.length > 0) {
+    for (let i = 0; i < badgeSettings.length; i++) {
+      const start = badgeSettings[i].start;
+      const length = badgeSettings[i].length;
+
+      try {
+        accessToken = await getAccessToken();
+        fileInfo = await getFileDirInfo(url, accessToken);
+        versions = await getVersions(accessToken, url);
+        versionList = makeVersionList(fileInfo, versions);
+        dataBytes = await getContent(
+          accessToken,
+          url,
+          versionList[versionNo],
+          start,
+          length,
+        );
+      } catch (error) {
+        console.log(error);
+        console.log(
+          "Refresh the access token since the file information acquisition failed for some reason.",
+        );
+        accessToken = await getAccessToken(true);
+        fileInfo = await getFileDirInfo(url, accessToken);
+        versions = await getVersions(accessToken, url);
+        versionList = makeVersionList(fileInfo, versions);
+        dataBytes = await getContent(
+          accessToken,
+          url,
+          versionList[versionNo],
+          start,
+          length,
+        );
+      }
+
+      const index = await searchBytesInData(dataBytes, badgeSettings[i].search);
+
+      if (index >= 0) {
+        return {
+          url: url,
+          versionNo: versionNo,
+          matched: true,
+          position: (start === "" ? 0 : Number(start)) + index,
+          badgeSettingId: badgeSettings[i].badgeSettingId,
+          search: badgeSettings[i].search,
+          sign: badgeSettings[i].sign,
+          fgColor: badgeSettings[i].fgColor,
+          bgColor: badgeSettings[i].bgColor,
+        };
+      }
+    }
+  }
+  return {
+    url: url,
+    versionNo: versionNo,
+    matched: false,
+  };
+}
+
+/**
+ * バイト列から指定された文字列を検索し、最初に見つかった位置のインデックスを返却
+ *
+ * @param {Uint8Array} dataBytes - 検索対象のバイナリデータ。
+ * @param {string} userSpecifiedString - 検索するバイト列を表す文字列。
+ * @returns {number} バイト列が見つかった場合はその位置のインデックス、見つからなかった場合は-1。
+ */
+async function searchBytesInData(dataBytes, userSpecifiedString) {
+  try {
+    const userSpecifiedBytes = convertStringToBytes(userSpecifiedString);
+    return indexOfBytes(dataBytes, userSpecifiedBytes);
+  } catch (error) {
+    console.error("Error:", error);
+    return -1;
+  }
+}
+
+/**
+ * 文字列をバイト列に変換する関数
+ *
+ * @param {string} str - 変換する対象の文字列。
+ * @returns {Uint8Array} 変換されたバイト列。/
+ */
+function convertStringToBytes(str) {
+  const bytes = [];
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === "\\" && str[i + 1] === "x") {
+      const hex = str.substr(i + 2, 2);
+      bytes.push(parseInt(hex, 16));
+      i += 3;
+    } else if (str[i] === "\\" && str[i + 1] === "\\") {
+      bytes.push(92);
+      i += 1;
+    } else {
+      bytes.push(str.charCodeAt(i));
+    }
+  }
+  return new Uint8Array(bytes);
+}
+
+/**
+ * バイト列から指定されたバイト列を検索し、最初に見つかった位置のインデックスを返却
+ *
+ * @param {Uint8Array} source - 検索対象のソースバイト列。
+ * @param {Uint8Array} target - 検索するバイト列。
+ * @returns {number} バイト列が見つかった場合はその位置のインデックス、見つからなかった場合は-1。
+ */
+function indexOfBytes(source, target) {
+  for (let i = 0; i < source.length - target.length + 1; i++) {
+    if (source[i] === target[0]) {
+      let match = true;
+      for (let j = 1; j < target.length; j++) {
+        if (source[i + j] !== target[j]) {
+          match = false;
+          break;
+        }
+      }
+      if (match) {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
+
+/**
+ * file APIとversions APIの結果を基に、バージョンリストを作成
+ *
+ * @param {Object} file - file APIの応答。
+ * @param {Object} versions - versions APIの応答。
+ * @returns {Object} バージョン番号をキーに、バージョンIDを値に持つオブジェクト。
+ */
+function makeVersionList(file, versions) {
+  const result = {};
+
+  if (versions.total_count > 0) {
+    versions.entries.forEach((entry, index) => {
+      const key = `V${versions.total_count - index}`;
+      result[key] = entry.id;
+    });
+  }
+
+  const lastKey = `V${versions.total_count + 1}`;
+  result[lastKey] = file.file_version.id;
+
+  return result;
 }
 
 /**
@@ -205,7 +388,7 @@ async function refreshAccessToken() {
     const clientSecret = options["clientSecret"];
     if (!clientId || !clientSecret) {
       throw new Error(
-        "clientId or clientSecret is missing. Set the Client ID and Client Secret in the options of this extension."
+        "clientId or clientSecret is missing. Set the Client ID and Client Secret in the options of this extension.",
       );
     }
     const result = await chrome.storage.local.get([
@@ -235,7 +418,9 @@ async function refreshAccessToken() {
       params.append("client_id", clientId);
       params.append("client_secret", clientSecret);
 
-      const res = await fetch("https://api.box.com/oauth2/token", {
+      const endpoint = "https://api.box.com/oauth2/token";
+      console.info("call: " + endpoint);
+      const res = await fetch(endpoint, {
         method: "post",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -284,7 +469,7 @@ async function getTokensFromAuthorization(clientId, clientSecret) {
 
   if (returnedState !== state) {
     throw new Error(
-      "Authorization request and response state values did not match."
+      "Authorization request and response state values did not match.",
     );
   }
 
@@ -296,7 +481,9 @@ async function getTokensFromAuthorization(clientId, clientSecret) {
   params.append("client_id", clientId);
   params.append("client_secret", clientSecret);
 
-  const res = await fetch("https://api.box.com/oauth2/token", {
+  const endpoint = "https://api.box.com/oauth2/token";
+  console.info("call: " + endpoint);
+  const res = await fetch(endpoint, {
     method: "post",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -308,7 +495,70 @@ async function getTokensFromAuthorization(clientId, clientSecret) {
 }
 
 async function getFileDirInfo(url, accessToken) {
-  const res = await fetch(getApiEndpoint(url), {
+  const endpoint = getApiEndpoint(url);
+  console.info("call: " + endpoint);
+  const res = await fetch(endpoint, {
+    headers: {
+      Authorization: "Bearer " + accessToken,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    console.log(res);
+    console.log(...res.headers);
+    throw new Error("Fetch error");
+  }
+
+  return await res.json();
+}
+
+/**
+ * ファイルのコンテンツの一部分を取得
+ *
+ * @param {string} accessToken - アクセストークン
+ * @param {string} url - 取得対象のファイルのURL
+ * @param {string} versionId - ファイルのバージョンID
+ * @param {string} start - ファイルの範囲指定の開始位置。空文字列の場合はファイルの先頭からと見なされる。
+ * @param {string} length - ファイルの範囲指定の長さ。空文字列の場合はファイルの終了までと見なされる。
+ * @returns {Promise<Uint8Array>} - ファイルの指定された範囲のデータを表すUint8Array
+ * @throws {Error} - ファイルの取得に失敗した場合に投げられるエラー
+ */
+async function getContent(accessToken, url, versionId, start, length) {
+  // startが空文字列の場合はファイルの先頭から範囲指定したと見ます。
+  // lengthが空文字列の場合はファイルの終了まで範囲指定したとみなす。
+  // またrangeヘッダの開始値は省略不可のため0を指定する
+  // (ちなみにrangaの範囲指定が `-` から始まった場合はRFC7233では末尾からの長さ指定とみなされるが、
+  // Boxの場合はドキュメントに記載はないが400エラーとなるようだ)。
+  // 一方、終了値は省略することで末尾までの指定とみなされる。
+  const startStr = start === "" ? "0" : start;
+  const endStr =
+    length === "" ? "" : String(Number(startStr) + Number(length) - 1);
+
+  const endpoint = getContentApiEndpoint(url) + "?version=" + versionId;
+  console.info("call: " + endpoint);
+  const res = await fetch(endpoint, {
+    headers: {
+      Authorization: "Bearer " + accessToken,
+      "Content-Type": "application/json",
+      range: `bytes=${startStr}-${endStr}`,
+    },
+  });
+
+  if (!res.ok) {
+    console.log(res);
+    console.log(...res.headers);
+    throw new Error("Fetch error");
+  }
+
+  const dataBytes = new Uint8Array(await res.arrayBuffer());
+  return dataBytes;
+}
+
+async function getVersions(accessToken, url) {
+  const endpoint = getVersionsApiEndpoint(url);
+  console.info("call: " + endpoint);
+  const res = await fetch(endpoint, {
     headers: {
       Authorization: "Bearer " + accessToken,
       "Content-Type": "application/json",
@@ -335,10 +585,10 @@ function getNotesParentFolderURL(tabid) {
         resolve(
           response["body"].replace(
             /(https:\/\/.*\.?app.box.com\/)files\/0\/f/,
-            "$1folder"
-          )
+            "$1folder",
+          ),
         );
-      }
+      },
     );
   });
 }
@@ -350,7 +600,7 @@ function getNotesFileName(tabid) {
       { method: "getNotesFileNameInTab" },
       (response) => {
         resolve(response["body"]);
-      }
+      },
     );
   });
 }
@@ -440,7 +690,7 @@ async function constructOutput(format, search, replace) {
     async (_match, p1) => {
       const ret = await resolveVariable(p1);
       return ret;
-    }
+    },
   );
 
   // $$は$に置換
@@ -507,7 +757,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       try {
         const response = await chrome.runtime.sendNativeMessage(
           "jp.toke.boxutils_helper",
-          { method: message["method"], path: path }
+          { method: message["method"], path: path },
         );
         console.log("Response", response);
       } catch (err) {
@@ -526,7 +776,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       try {
         const response = await chrome.runtime.sendNativeMessage(
           "jp.toke.boxutils_helper",
-          { method: message["method"].replace("FromText", ""), path: path }
+          { method: message["method"].replace("FromText", ""), path: path },
         );
         console.log("Response", response);
       } catch (err) {
@@ -539,6 +789,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       sendResponse({
         body: info,
       });
+    } else if (message["method"] === "getBadge") {
+      const badgeInfo = await getBadge(message["url"], message["versionNo"]);
+      sendResponse({ body: badgeInfo });
     }
   })();
 

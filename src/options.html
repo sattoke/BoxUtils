@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <title>BoxUtils Options</title>
@@ -12,6 +12,7 @@
         <li class="tab active">Box</li>
         <li class="tab">Path Copy</li>
         <li class="tab">Path Conversion</li>
+        <li class="tab">Badge</li>
         <li class="tab">Web appearance</li>
         <li class="tab">Import/Export</li>
         <li class="tab">Debug</li>
@@ -159,8 +160,74 @@
               <input type="text" placeholder="search" class="path-conversion-search"><input type="text" placeholder="replace" class="path-conversion-replace"><button>remove</button>
             </div>
             -->
-            <div id="addInputPair" class="button">Add</div>
+            <div id="addInputPair" class="button">Add Row</div>
           </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-description">
+            These options are for "Add a badge to the file list according to
+            content" feature.
+          </div>
+          <h2 class="panel-h2">Badge Settings</h2>
+
+          <div id="badge-settings-outer">
+            <table id="badge-settings-table">
+              <thead>
+                <tr>
+                  <th class="badge-settings-th-start">Start</th>
+                  <th class="badge-settings-th-length">Length</th>
+                  <th class="badge-settings-th-search">Search</th>
+                  <th class="badge-settings-th-sign">Sign</th>
+                  <th class="badge-settings-th-fgColor">FG Color</th>
+                  <th class="badge-settings-th-bgColor">BG Color</th>
+                  <th class="badge-settings-th-action">Action</th>
+                </tr>
+              </thead>
+              <tbody id="badge-settings-container"></tbody>
+            </table>
+          </div>
+          <div class="container">
+            <div id="add-badge-setting" class="button">Add Row</div>
+          </div>
+          <template id="badge-setting-template">
+            <tr class="badge-setting-container">
+              <td><input type="number" class="start" /></td>
+              <td><input type="number" class="length" /></td>
+              <td><input type="text" class="search" /></td>
+              <td><input type="text" class="sign" /></td>
+              <td><input type="color" class="fgColor" value="#ffffff" /></td>
+              <td><input type="color" class="bgColor" value="#ff0000" /></td>
+              <td><button class="badge-setting-remove">Remove</button></td>
+            </tr>
+          </template>
+
+          <h3>Column Description</h3>
+          <dl>
+            <dt>Start</dt>
+            <dd>
+              Search start byte position in the file. If omitted, it is assumed
+              that the range is specified from the beginning of the file.
+            </dd>
+            <dt>Length</dt>
+            <dd>
+              Byte length from the search start position to the search end
+              position. If omitted, it is assumed that the range is specified up
+              to the end of the file.
+            </dd>
+            <dt>Search</dt>
+            <dd>
+              String to search. You can specify the value in hexadecimal by
+              <code>\xnn</code>. The <code>\</code> itself is specified as
+              <code>\\</code>.
+            </dd>
+            <dt>Sign</dt>
+            <dd>Text to put on the badge.</dd>
+            <dt>FG Color</dt>
+            <dd>Color of the badge sign.</dd>
+            <dt>BG Color</dt>
+            <dd>Background color of the badge sign.</dd>
+          </dl>
         </div>
 
         <div class="panel">

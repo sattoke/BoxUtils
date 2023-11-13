@@ -1,7 +1,7 @@
 {
   "name": "BoxUtils",
   "description": "Tools to help you use Box",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "manifest_version": 3,
   "permissions": [
     "storage",
