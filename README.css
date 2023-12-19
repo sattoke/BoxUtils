@@ -22,3 +22,15 @@ code {
   margin: 0 2px;
   padding: 0 5px;
 }
+
+strong em {
+  color: #ff3333;
+}
+
+strong {
+  color: #00873c;
+}
+
+em {
+  color: #008dcb;
+}

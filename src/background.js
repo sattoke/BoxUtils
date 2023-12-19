@@ -3,6 +3,9 @@
 const STORAGE_VERSION = 2;
 
 chrome.runtime.onInstalled.addListener(async () => {
+  chrome.tabs.create({
+    url: "chrome-extension://" + chrome.runtime.id + "/README.html",
+  });
   const options = await chrome.storage.sync.get();
 
   console.log("initialized");
@@ -80,10 +83,6 @@ chrome.runtime.onInstalled.addListener(async () => {
   options["detailedDateTime"] = true;
 
   await chrome.storage.sync.set(options);
-
-  chrome.tabs.create({
-    url: "chrome-extension://" + chrome.runtime.id + "/README.html",
-  });
 });
 
 async function getCurrentTabInfo() {
