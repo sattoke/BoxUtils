@@ -94,7 +94,7 @@ async function getCurrentTabInfo() {
 }
 
 function getURLTypeAndIdentifier(url) {
-  const [_, type, id] = url.match(/https:\/\/.*\.?app.box.com\/([^/]+)\/(\d+)/);
+  const [, type, id] = url.match(/https:\/\/.*\.?app.box.com\/([^/]+)\/(\d+)/);
   return [type, id];
 }
 
@@ -381,7 +381,7 @@ async function refreshAccessToken() {
   let tokenResponse;
   let refreshDateTime;
 
-  await navigator.locks.request("refreshAccessToken", async (lock) => {
+  await navigator.locks.request("refreshAccessToken", async () => {
     const options = await chrome.storage.sync.get(["clientId", "clientSecret"]);
     const clientId = options["clientId"];
     const clientSecret = options["clientSecret"];
@@ -456,7 +456,6 @@ function getRandomString() {
 }
 
 async function getTokensFromAuthorization(clientId, clientSecret) {
-  const redirectUrl = chrome.identity.getRedirectURL();
   const state = getRandomString();
 
   const responseUrl = await chrome.identity.launchWebAuthFlow({
@@ -614,7 +613,7 @@ async function resolveVariable(name) {
     return urlobj.origin + urlobj.pathname;
   }
 
-  const [type, id] = getURLTypeAndIdentifier(taburl);
+  const [type] = getURLTypeAndIdentifier(taburl);
 
   let url;
   if (type === "notes") {
@@ -739,7 +738,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       const search = copySetting["search"];
       const replace = copySetting["replace"];
       const res = await constructOutput(output, search, replace);
-      const [tabid, _taburl] = await getCurrentTabInfo();
+      const [tabid] = await getCurrentTabInfo();
 
       chrome.tabs.sendMessage(tabid, {
         method: "copyToClipboard",
@@ -791,6 +790,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     } else if (message["method"] === "getBadge") {
       const badgeInfo = await getBadge(message["url"], message["versionNo"]);
       sendResponse({ body: badgeInfo });
+    } else if (message["method"] === "showDiff") {
+      // showDiffは外部アプリにファイルを渡すために基本的にネイティブアプリ側で制御する
+      try {
+        const options = await chrome.storage.sync.get();
+        const accessToken = await getAccessToken();
+        const response = await chrome.runtime.sendNativeMessage(
+          "jp.toke.boxutils_helper",
+          {
+            method: message["method"],
+            accessToken: accessToken,
+            commandOptions: options.diffSettings.diffCommandOptions,
+            url1: message["args"][0]["url"],
+            versionNo1: message["args"][0]["versionNo"],
+            url2: message["args"][1]["url"],
+            versionNo2: message["args"][1]["versionNo"],
+          },
+        );
+        console.log("Response", response);
+      } catch (err) {
+        console.log("Error", err);
+      }
+
+      sendResponse({});
+    } else if (message["method"] === "openOptionPage") {
+      chrome.runtime.openOptionsPage();
+      sendResponse({});
     }
   })();
 

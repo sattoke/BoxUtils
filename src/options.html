@@ -13,6 +13,7 @@
         <li class="tab">Path Copy</li>
         <li class="tab">Path Conversion</li>
         <li class="tab">Badge</li>
+        <li class="tab">Diff</li>
         <li class="tab">Web appearance</li>
         <li class="tab">Import/Export</li>
         <li class="tab">Debug</li>
@@ -228,6 +229,30 @@
             <dt>BG Color</dt>
             <dd>Background color of the badge sign.</dd>
           </dl>
+        </div>
+
+        <div class="panel">
+          <div class="panel-description">These options are for diff tool.</div>
+          <h2 class="panel-h2">Diff Tool Settings</h2>
+          <div>
+            <label class="label-for-text">Command and Options</label>
+            <input type="text" id="diff-command-options" size="64" />
+          </div>
+          <div class="description">
+            <p>
+              The files to be compared are added at the end of the "Command and
+              Options" Setting. The order in which files are added is the same
+              as the order in which they are selected in the browser.
+            </p>
+          </div>
+          <h3>Command and Options Examples</h3>
+          <ul>
+            <li>
+              <code
+                >"C:\Program Files\WinMerge\WinMergeU.exe" /e /maximize</code
+              >
+            </li>
+          </ul>
         </div>
 
         <div class="panel">

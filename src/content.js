@@ -295,12 +295,17 @@ function formatDate(dateString) {
   return `${year}/${month}/${day} (${dayOfWeek}) ${hour}:${minute}:${second}`;
 }
 
-async function rewriteColumns() {
-  // フォルダビューの時のみ処理する
-  if (!location.pathname.startsWith("/folder/")) {
-    return;
+function modifyPage() {
+  if (location.pathname.startsWith("/folder/")) {
+    modifyFolderView();
   }
 
+  if (location.pathname.startsWith("/file/")) {
+    modifyFileView();
+  }
+}
+
+async function modifyFolderView() {
   // 列書換は時刻詳細表示機能かバッチ追加機能が有効なときのみ処理する
   const options = await chrome.storage.sync.get();
   const detailedDateTimeEnabled = options.detailedDateTime;
@@ -330,6 +335,271 @@ async function rewriteColumns() {
     if (detailedDateTimeEnabled) {
       addDetailedDateTime(row);
     }
+  }
+}
+
+async function modifyFileView() {
+  const clickedElements = []; // クリックされたdiff対象バージョンを示す要素を保存する配列
+
+  const elements = document.querySelectorAll(".bcs-VersionsItemBadge");
+
+  // 各要素にクリックイベントを追加
+  elements.forEach((element) => {
+    // 既に同じイベントが追加されていない場合にのみ追加
+    if (!element.hasClickListener) {
+      addClickEvent(element);
+      element.hasClickListener = true; // フラグを設定して重複追加を防ぐ
+    }
+
+    // xlsxファイルなどはバージョン履歴のバッジのpointerEventsが"none"にされていて
+    // クリックが無効化されているので"auto"で上書きする
+    element.style.pointerEvents = "auto";
+    element.style.cursor = "pointer";
+  });
+
+  // クリックイベントを追加する関数
+  function addClickEvent(element) {
+    element.addEventListener("click", () => {
+      if (clickedElements.includes(element)) {
+        // 既にdiff対象として選択されたファイルがクリックされた場合は選択を外す
+        const indexToRemove = clickedElements.indexOf(element);
+        removeSVGAndElement(indexToRemove);
+        updateDisplayIndexes();
+        deleteDiffButton();
+      } else {
+        // 新規に選択されたファイルはdiff対象(clickedElements)に追加する
+        clickedElements.push(element);
+        // クリックされた要素の色を補色に変える
+        toggleComplementaryColors(element);
+
+        // 選択された順番を示す番号をSVGでバッジの左上に表示する
+        addVersionNoSVGToElement(element, clickedElements.length);
+
+        // diff対象は2個までとし3個目がクリックされたときは先頭の要素を削除する
+        // [TBD] コマンドによっては3つ以上のファイルのdiffを表示してくれるものもある。
+        //       ひとまずは簡単化のために2つ限定で実装する。
+        if (clickedElements.length === 3) {
+          removeSVGAndElement(0);
+          updateDisplayIndexes();
+        }
+
+        // 2回目のクリックで diff ボタンを表示
+        if (clickedElements.length < 2) {
+          deleteDiffButton();
+        } else {
+          showDiffButton();
+        }
+      }
+    });
+  }
+
+  // 表示インデックスを更新する関数
+  function updateDisplayIndexes() {
+    clickedElements.forEach((element, index) => {
+      const svg = element.parentNode.firstChild;
+      svg.lastChild.textContent = (index + 1).toString();
+    });
+  }
+
+  // diff ボタンを表示する関数
+  async function showDiffButton() {
+    // イベントリスナでクロージャの古い要素が使われないように削除および新規作成とする
+    deleteDiffButton();
+
+    const element1 = clickedElements[0];
+    const element2 = clickedElements[1];
+
+    const rect2 = element2.getBoundingClientRect();
+
+    // diff ボタンを動的に生成
+    const diffButton = document.createElement("button");
+    diffButton.id = "diff-button";
+
+    const options = await chrome.storage.sync.get();
+
+    // オプション画面でDiff toolの設定がされていない場合はまずは設定を促す
+    if (!options.diffSettings || !options.diffSettings.diffCommandOptions) {
+      diffButton.innerHTML = "Diff tool is not setup. Please setup it in ";
+
+      const optionLink = document.createElement("a");
+      optionLink.href = "#";
+      optionLink.id = "openOptionPageLink";
+      optionLink.textContent = "the options page";
+
+      optionLink.addEventListener("click", () => {
+        chrome.runtime.sendMessage(
+          {
+            method: "openOptionPage",
+          },
+          () => {
+            console.log("");
+          },
+        );
+      });
+
+      diffButton.appendChild(optionLink);
+    } else {
+      diffButton.textContent = "Show diff";
+    }
+
+    // diff ボタンを表示する位置を計算
+    const diffButtonX = rect2.right;
+    const diffButtonY = rect2.bottom;
+
+    // diff ボタンのスタイルを設定
+    diffButton.style.position = "fixed";
+    diffButton.style.left = diffButtonX + "px";
+    diffButton.style.top = diffButtonY + "px";
+    diffButton.style.zIndex = "999"; // 他の要素より手前に表示
+    diffButton.style.color = "white";
+    diffButton.style.backgroundColor = "seagreen";
+    diffButton.style.border = "none";
+    diffButton.style.borderRadius = "8px";
+    diffButton.style.padding = "10px 15px";
+    diffButton.style.fontSize = "16px";
+    diffButton.style.fontWeight = "bold";
+    diffButton.style.cursor = "pointer";
+
+    // クローズボタンを作成 (diffボタンの右上に⛒を表示する)
+    const closeButton = document.createElement("div");
+    closeButton.innerHTML = "&#x26d2;"; // Unicode character for "⛒"
+    closeButton.style.position = "absolute";
+    closeButton.style.top = "-3px";
+    closeButton.style.right = "0";
+    closeButton.style.padding = "0px";
+    closeButton.style.cursor = "pointer";
+    closeButton.style.color = "white";
+    closeButton.style.fontSize = "12px";
+    closeButton.style.fontWeight = "normal";
+
+    // クローズボタンを diff ボタンに追加
+    diffButton.appendChild(closeButton);
+
+    // diff ボタンをドキュメントに追加
+    document.body.appendChild(diffButton);
+
+    // diff ボタンがクリックされたときの処理を追加
+    diffButton.addEventListener("click", () => {
+      // span 要素の中にバージョン番号が表示されている
+      if (element1.querySelector("span") && element2.querySelector("span")) {
+        const text1 = element1.querySelector("span").textContent;
+        const text2 = element2.querySelector("span").textContent;
+
+        chrome.runtime.sendMessage(
+          {
+            method: "showDiff",
+            args: [
+              {
+                url: location.origin + location.pathname,
+                versionNo: text1,
+              },
+              {
+                url: location.origin + location.pathname,
+                versionNo: text2,
+              },
+            ],
+          },
+          () => {
+            console.log("");
+          },
+        );
+      } else {
+        console.log("One or both elements do not have a span element.");
+      }
+    });
+
+    // クローズボタンがクリックされたときはdiffボタンの削除およびファイル選択をクリアする
+    closeButton.addEventListener("click", (event) => {
+      event.stopPropagation(); // クリックイベントが diff ボタンに伝播しないようにする
+      deleteDiffButton();
+      while (clickedElements.length > 0) {
+        removeSVGAndElement(0);
+      }
+    });
+  }
+
+  // diffボタンを削除する関数
+  function deleteDiffButton() {
+    const existingDiffButton = document.getElementById("diff-button");
+    if (existingDiffButton) {
+      existingDiffButton.parentNode.removeChild(existingDiffButton);
+    }
+  }
+
+  // クリックされた要素に選択された順番を示す番号をSVGでバッジの左上に表示する関数
+  function addVersionNoSVGToElement(element, index) {
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("width", "16");
+    svg.setAttribute("height", "16");
+    svg.style.position = "absolute";
+
+    svg.style.zIndex = "999"; // 他の要素より手前に表示
+
+    const rectElement = document.createElementNS(svgNS, "rect");
+    rectElement.setAttribute("width", "16");
+    rectElement.setAttribute("height", "16");
+    rectElement.setAttribute("fill", "rgba(255, 255, 255, 0.7)"); // 半透明の白
+    rectElement.setAttribute("rx", "4"); // 角を丸める
+    rectElement.setAttribute("ry", "4"); // 角を丸める
+
+    const text = document.createElementNS(svgNS, "text");
+    text.setAttribute("x", "4");
+    text.setAttribute("y", "12");
+    text.setAttribute("fill", "black");
+    text.textContent = index.toString();
+
+    svg.appendChild(rectElement);
+    svg.appendChild(text);
+
+    const parentNode = element.parentNode;
+    parentNode.insertBefore(svg, parentNode.firstChild);
+  }
+
+  // 選択されたdiff対象ファイルに対応するSVGと要素を削除する関数
+  function removeSVGAndElement(index) {
+    // 要素を配列から削除
+    const element = clickedElements.splice(index, 1)[0];
+    // 対応するSVGを削除
+    const svgToRemove = element.parentNode.firstChild;
+    svgToRemove.parentNode.removeChild(svgToRemove);
+
+    // 補色を戻す
+    toggleComplementaryColors(element);
+  }
+
+  // 補色に変換する関数
+  function toggleComplementaryColors(element) {
+    // 現在のスタイルを取得
+    const backgroundColor = getComputedStyle(element).backgroundColor;
+    const color = getComputedStyle(element).color;
+
+    // 背景色とテキスト色を補色に変換
+    const complementaryBackgroundColor = getComplementaryColor(backgroundColor);
+    const complementaryColor = getComplementaryColor(color);
+
+    // 新しいスタイルを設定
+    element.style.backgroundColor = complementaryBackgroundColor;
+    element.style.color = complementaryColor;
+  }
+
+  // 補色を取得する関数
+  function getComplementaryColor(color) {
+    // 色の形式をRGBに変換
+    const rgb = color.match(/\d+/g);
+    // 各色を255から引いて補色を計算
+    const complementaryRgb = rgb.map((value) => {
+      return 255 - parseInt(value);
+    });
+    // RGBを16進数に変換
+    const complementaryColor =
+      "#" +
+      complementaryRgb
+        .map((value) => {
+          return value.toString(16).padStart(2, "0");
+        })
+        .join("");
+    return complementaryColor;
   }
 }
 
@@ -441,8 +711,8 @@ async function addDetailedDateTime(row) {
 }
 
 function observe() {
-  const observer = new MutationObserver((mutations, observer) => {
-    rewriteColumns();
+  const observer = new MutationObserver(() => {
+    modifyPage();
   });
 
   const config = {

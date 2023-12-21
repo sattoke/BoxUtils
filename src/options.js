@@ -76,6 +76,11 @@ async function saveOptions() {
   const modifiedBadgeIds = await findModifiedBadgeIds(badgeSettings);
   removeBadgeInfoCache(modifiedBadgeIds);
 
+  // Diff設定
+  const diffSettings = {
+    diffCommandOptions: document.getElementById("diff-command-options").value,
+  };
+
   await chrome.storage.sync.set(
     {
       initialized: true,
@@ -86,6 +91,7 @@ async function saveOptions() {
       detailedDateTime: detailedDateTime,
       pathConversionRules: pathConversionRules,
       badgeSettings: badgeSettings,
+      diffSettings: diffSettings,
     },
     () => {
       const status = document.getElementById("status");
@@ -300,6 +306,14 @@ async function restoreOptions() {
       badgeSettingsContainer.appendChild(setting);
     }
   }
+
+  // Diff設定
+  if (!options.diffSettings || !options.diffSettings.diffCommandOptions) {
+    document.getElementById("diff-command-options").value = "";
+  } else {
+    document.getElementById("diff-command-options").value =
+      options.diffSettings.diffCommandOptions;
+  }
 }
 
 /**
@@ -477,11 +491,6 @@ async function importOptions() {
 }
 
 async function clearToken(event) {
-  const result = await chrome.storage.local.get([
-    "access_token",
-    "refresh_token",
-  ]);
-
   if (event.target.id === "clearAccessToken") {
     await chrome.storage.local.remove("access_token");
   } else if (event.target.id === "clearRefreshToken") {
