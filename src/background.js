@@ -625,6 +625,9 @@ async function resolveVariable(name) {
   }
 
   const info = await getInfo(url);
+  if (name == "file_name") {
+    return info.name;
+  }
 
   let separator;
   let prefix;
