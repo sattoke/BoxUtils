@@ -22,7 +22,7 @@ function getNotesParentFolderURLInTab() {
 }
 
 function getNotesFileNameInTab() {
-  return document.querySelector(".documentTitle").textContent;
+  return document.querySelector(".document-title").textContent;
 }
 
 function getInfo(taburl) {
