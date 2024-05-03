@@ -2,10 +2,12 @@
 
 const STORAGE_VERSION = 2;
 
-chrome.runtime.onInstalled.addListener(async () => {
-  chrome.tabs.create({
-    url: "chrome-extension://" + chrome.runtime.id + "/README.html",
-  });
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === "install" || details.reason === "update") {
+    chrome.tabs.create({
+      url: "chrome-extension://" + chrome.runtime.id + "/README.html",
+    });
+  }
   const options = await chrome.storage.sync.get();
 
   console.log("initialized");
